@@ -64,7 +64,7 @@ redirect_urls = [
 ]
 
 [app_proxy]
-url = "/apps/navratri"
+url = "https://navaratrigame.vercel.app/apps/navratri"
 subpath = "navratri"
 prefix = "apps"
 
