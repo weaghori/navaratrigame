@@ -40,6 +40,8 @@ import "../styles/navratri-game.css";
 import { authenticate, unauthenticated } from "../shopify.server";
 import { limitRequestBody } from "../utils/request-body-limit.server";
 import type { WheelDiscountAdminClient } from "../services/reward.server";
+import { getLoginUrl, getLogoutUrl } from "../config/urls";
+import { WinnerPopupModal } from "../components/WinnerPopupModal";
 
 type LevelWithChallengeCopy = {
   levelNumber: number;
@@ -235,9 +237,8 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   // Account routes belong to Shopify's storefront domain, never the app tunnel
   // host (which doesn't serve /account/logout or customer authentication).
   const accountBaseUrl = storefrontUrl || "";
-  const accountReturnPath = `/apps/navratri/campaigns/${campaign.slug}`;
-  const loginUrl = `${accountBaseUrl}/customer_authentication/login?return_to=${encodeURIComponent(accountReturnPath)}`;
-  const logoutUrl = `${accountBaseUrl}/account/logout?return_url=${encodeURIComponent(accountReturnPath)}`;
+  const loginUrl = getLoginUrl({ slug: campaign.slug, isDev, storefrontUrl });
+  const logoutUrl = getLogoutUrl({ slug: campaign.slug, isDev, storefrontUrl });
 
   // Resolve customer display name via Shopify Admin API (using the built-in proxy admin client).
   // This replaces the old Liquid bounce redirect which caused infinite loops on Shopify App Proxy.
@@ -323,6 +324,8 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
       storefrontUrl,
       loginUrl,
       logoutUrl,
+      isWinner: false,
+      winnerDetails: null,
       serverNow: Date.now(),
       campaign: {
         id: campaign.id,
@@ -379,7 +382,7 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
 
   // Customer is authenticated → load actual customer progress & records
   await tryCompleteReadyPurchaseForCustomer(campaign.id, customerId);
-  const [levelProgress, transactions, leaderboard, reward, movieGuessAttempts] = await Promise.all([
+  const [levelProgress, transactions, leaderboard, reward, movieGuessAttempts, winnerRecord] = await Promise.all([
     getCustomerLevelProgress({
       campaignId: campaign.id,
       shopifyCustomerId: customerId,
@@ -395,6 +398,17 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
     prisma.auditEvent.findMany({
       where: { campaignId: campaign.id, actorId: customerId, eventType: "MOVIE_GUESS_ATTEMPT" },
       select: { targetId: true },
+    }),
+    prisma.winner.findFirst({
+      where: {
+        campaignId: campaign.id,
+        shopifyCustomerId: customerId,
+      },
+      select: {
+        rank: true,
+        rewardAssigned: true,
+        createdAt: true,
+      },
     }),
   ]);
 
@@ -480,6 +494,15 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
     storefrontUrl,
     loginUrl,
     logoutUrl,
+    isWinner: Boolean(winnerRecord),
+    winnerDetails: winnerRecord
+      ? {
+          rank: winnerRecord.rank,
+          rewardAssigned: winnerRecord.rewardAssigned,
+          prizeValue: "₹1,500–₹2,000",
+          createdAt: winnerRecord.createdAt.toISOString(),
+        }
+      : null,
     serverNow: Date.now(),
     campaign: {
       id: campaign.id,
@@ -1180,9 +1203,31 @@ export default function CustomerCampaignPage() {
   const pointsBarMax = 1500;
   const percentage = Math.min(100, Math.round((progress.totalPoints / pointsBarMax) * 100));
 
-  const resolvedLogoutUrl = (typeof window !== "undefined" && window.location.origin)
-    ? `${window.location.origin}/account/logout?return_url=${encodeURIComponent(window.location.pathname + window.location.search)}`
-    : logoutUrl;
+  const [showWinnerPopup, setShowWinnerPopup] = useState(false);
+
+  useEffect(() => {
+    if (initialData.isWinner) {
+      const dismissed = typeof window !== "undefined"
+        ? window.sessionStorage.getItem(`navratri_winner_dismissed_${campaign.slug}`)
+        : null;
+      if (!dismissed) {
+        setShowWinnerPopup(true);
+      }
+    }
+  }, [initialData.isWinner, campaign.slug]);
+
+  const handleCloseWinnerPopup = useCallback(() => {
+    if (typeof window !== "undefined") {
+      window.sessionStorage.setItem(`navratri_winner_dismissed_${campaign.slug}`, "true");
+    }
+    setShowWinnerPopup(false);
+  }, [campaign.slug]);
+
+  const resolvedLogoutUrl = getLogoutUrl({
+    slug: campaign.slug,
+    isDev: initialData.isDev,
+    storefrontUrl: initialData.storefrontUrl,
+  });
 
   // GoKwik / KwikPass compatible login targeting the storefront origin.
   const triggerLogin = () => {
@@ -1197,11 +1242,11 @@ export default function CustomerCampaignPage() {
       (win.Kwikpass as Record<string, () => void>).login(); return;
     }
     
-    // Create an anchor link targeting the current storefront origin (e.g. https://aghoristore.com).
-    // An absolute URL starting with window.location.origin bypasses any <base> tag pointing to the Vercel backend.
-    const storeOrigin = typeof window !== "undefined" && window.location.origin ? window.location.origin : "";
-    const currentReturnPath = typeof window !== "undefined" ? (window.location.pathname + window.location.search) : `/apps/navratri/campaigns/${campaign.slug}`;
-    const fullLoginUrl = `${storeOrigin}/account/login?return_url=${encodeURIComponent(currentReturnPath)}`;
+    const fullLoginUrl = getLoginUrl({
+      slug: campaign.slug,
+      isDev: initialData.isDev,
+      storefrontUrl: initialData.storefrontUrl,
+    });
 
     const a = document.createElement("a");
     a.href = fullLoginUrl;
@@ -2084,6 +2129,14 @@ export default function CustomerCampaignPage() {
           </section>
         </div>
       )}
+
+      {/* Winner Popup Modal */}
+      <WinnerPopupModal
+        isOpen={showWinnerPopup}
+        onClose={handleCloseWinnerPopup}
+        rank={initialData.winnerDetails?.rank}
+        prizeValue={initialData.winnerDetails?.prizeValue}
+      />
     </div>
     </AppProxyProvider>
   );
