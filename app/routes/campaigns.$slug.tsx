@@ -154,52 +154,12 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
     shopDomain = (session as unknown as Record<string, unknown> | undefined)?.shop as string | undefined
       || url.searchParams.get("shop")
       || undefined;
+
+    // Shopify natively passes logged_in_customer_id for authenticated customers.
+    // We do NOT do a Liquid bounce redirect — it causes "error in third-party application"
+    // because Shopify App Proxy strips custom query params, creating an infinite loop.
     const proxyCustomerId = url.searchParams.get("logged_in_customer_id");
     const signedLiquidCustomerId = getSignedLiquidCustomerId(url);
-
-    const isDataRequest = url.searchParams.has("_data");
-    const isGuest = url.searchParams.get("guest") === "true";
-    const hasLiquidId = url.searchParams.has("customer_id_from_liquid");
-
-    // ALWAYS bounce once via Liquid to get the customer's email/phone for their display name.
-    // We check !hasLiquidId instead of !signedLiquidCustomerId to prevent infinite loops if the signature check fails.
-    if (!hasLiquidId && !isGuest && isProxyRequest && !isDataRequest) {
-      return new Response(
-        `
-        {% if customer %}
-          <script>
-            var url = new URL(window.location.href);
-            {% assign customer_display_name = customer.email | split: '@' | first | strip %}
-            {% if customer_display_name == blank %}{% assign customer_display_name = customer.phone | strip %}{% endif %}
-            {% assign customer_identity_payload = customer.id | append: '|' | append: customer_display_name %}
-            {% assign customer_identifier = customer.email | strip %}
-            {% if customer_identifier == blank %}{% assign customer_identifier = customer.phone | strip %}{% endif %}
-            {% assign customer_identifier_payload = customer.id | append: '|' | append: customer_identifier %}
-            url.searchParams.set('customer_id_from_liquid', '{{ customer.id }}');
-            url.searchParams.set('customer_display_name', decodeURIComponent('{{ customer_display_name | url_encode }}'));
-            url.searchParams.set('customer_identity_sig', '{{ customer_identity_payload | hmac_sha256: "${process.env.SHOPIFY_API_SECRET}" }}');
-            url.searchParams.set('customer_identifier', decodeURIComponent('{{ customer_identifier | url_encode }}'));
-            url.searchParams.set('customer_identifier_sig', '{{ customer_identifier_payload | hmac_sha256: "${process.env.SHOPIFY_API_SECRET}" }}');
-            url.searchParams.set('customer_sig', '{{ customer.id | hmac_sha256: "${process.env.SHOPIFY_API_SECRET}" }}');
-            window.location.replace(url.toString());
-          </script>
-        {% else %}
-          <script>
-            var url = new URL(window.location.href);
-            url.searchParams.set('guest', 'true');
-            window.location.replace(url.toString());
-          </script>
-        {% endif %}
-        `,
-        {
-          status: 200,
-          headers: {
-            "Content-Type": "application/liquid",
-            "Cache-Control": "no-store",
-          },
-        }
-      );
-    }
 
     if (signedLiquidCustomerId) {
       customerId = signedLiquidCustomerId;
@@ -220,6 +180,8 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   // The signed Liquid customer bridge can survive storefront requests where
   // the app-proxy session lookup has no offline session to attach.
   customerId ||= getSignedLiquidCustomerId(url);
+  // Display name & identifier come from signed Liquid params if present (legacy support),
+  // otherwise we read from the DB below after the campaign lookup.
   const customerDisplayName = getSignedLiquidDisplayName(url, customerId);
   const customerIdentifier = getSignedLiquidCustomerIdentifier(url, customerId);
 
@@ -269,6 +231,48 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   const accountReturnPath = storefrontUrl ? `/apps/navratri/campaigns/${campaign.slug}` : returnPath;
   const loginUrl = `${accountBaseUrl}/customer_authentication/login?return_to=${encodeURIComponent(accountReturnPath)}`;
   const logoutUrl = `${accountBaseUrl}/account/logout?return_url=${encodeURIComponent(accountReturnPath)}`;
+
+  // Resolve customer display name via Shopify Admin API when not available from signed Liquid params.
+  // This replaces the old Liquid bounce redirect which caused infinite loops on Shopify App Proxy.
+  let resolvedDisplayName: string | null = customerDisplayName;
+  let resolvedIdentifier: string | null = customerIdentifier;
+  if (isAuthenticated && customerId && !resolvedDisplayName && shopDomain) {
+    try {
+      const numericCustomerId = customerId.replace(/\D/g, "");
+      const shopifyCustomerGid = `gid://shopify/Customer/${numericCustomerId}`;
+      const shopifyAdminUrl = `https://${shopDomain}/admin/api/2024-10/graphql.json`;
+      const adminToken = process.env.SHOPIFY_ACCESS_TOKEN || process.env.ADMIN_ACCESS_TOKEN;
+      if (adminToken) {
+        const gqlRes = await fetch(shopifyAdminUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "X-Shopify-Access-Token": adminToken },
+          body: JSON.stringify({
+            query: `query GetCustomer($id: ID!) { customer(id: $id) { email phone firstName lastName } }`,
+            variables: { id: shopifyCustomerGid },
+          }),
+        });
+        if (gqlRes.ok) {
+          const gqlData = await gqlRes.json() as { data?: { customer?: { email?: string; phone?: string; firstName?: string; lastName?: string } } };
+          const cust = gqlData?.data?.customer;
+          if (cust) {
+            const emailLocal = cust.email?.split("@")[0]?.trim();
+            const phoneLocal = cust.phone?.replace(/\D/g, "").slice(-4);
+            resolvedDisplayName = emailLocal || (cust.firstName ? cust.firstName.trim() : null) || (phoneLocal ? `+${phoneLocal}` : null);
+            resolvedIdentifier = cust.email || cust.phone || null;
+          }
+        }
+      } else {
+        // No admin token: fall back to existing DB display name (read after getOrCreateCustomerProgress below)
+        const existingProgress = await prisma.customerProgress.findUnique({
+          where: { campaignId_shopifyCustomerId: { campaignId: campaign.id, shopifyCustomerId: customerId } },
+          select: { displayName: true },
+        });
+        resolvedDisplayName = existingProgress?.displayName || null;
+      }
+    } catch {
+      // Non-fatal: display name will fall back to "Player" in the UI
+    }
+  }
 
   // If customer is NOT authenticated, load public campaign preview (Day 1 preview & later mystery cards)
   if (!isAuthenticated || !customerId) {
@@ -351,7 +355,7 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
     getCustomerLevelProgress({
       campaignId: campaign.id,
       shopifyCustomerId: customerId,
-      displayName: customerDisplayName,
+      displayName: resolvedDisplayName,
     }),
     getCustomerPointHistory(customerId, campaign.id),
     getPublicLeaderboard({
@@ -462,7 +466,7 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
       endDate: campaign.endDate.toISOString(),
     },
     customerId,
-    customerIdentifier,
+    customerIdentifier: resolvedIdentifier,
     shopDomain: campaign.shop,
     customerBridge: customerId ? createCustomerBridge(customerId) : null,
     progress: {
