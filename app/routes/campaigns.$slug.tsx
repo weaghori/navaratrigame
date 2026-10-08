@@ -1142,24 +1142,57 @@ export default function CustomerCampaignPage() {
   const pointsBarMax = 1500;
   const percentage = Math.min(100, Math.round((progress.totalPoints / pointsBarMax) * 100));
 
-  // GoKwik / KwikPass compatible login.
+  const resolvedLogoutUrl = (typeof window !== "undefined" && window.location.origin)
+    ? `${window.location.origin}/account/logout?return_url=${encodeURIComponent(window.location.pathname + window.location.search)}`
+    : logoutUrl;
+
+  // GoKwik / KwikPass compatible login targeting the storefront origin.
   const triggerLogin = () => {
     const win = window as unknown as Record<string, unknown>;
     if (win.GoKwikUI && typeof (win.GoKwikUI as Record<string, unknown>).login === "function") {
       (win.GoKwikUI as Record<string, () => void>).login(); return;
     }
+    if (win.gokwik && typeof (win.gokwik as Record<string, unknown>).login === "function") {
+      (win.gokwik as Record<string, () => void>).login(); return;
+    }
     if (win.Kwikpass && typeof (win.Kwikpass as Record<string, unknown>).login === "function") {
       (win.Kwikpass as Record<string, () => void>).login(); return;
     }
     
-    // Create a native login link and click it. 
-    // GoKwik/Kwikpass actively intercepts clicks on /account/login links on the store.
+    // Create an anchor link targeting the current storefront origin (e.g. https://aghoristore.com).
+    // An absolute URL starting with window.location.origin bypasses any <base> tag pointing to the Vercel backend.
+    const storeOrigin = typeof window !== "undefined" && window.location.origin ? window.location.origin : "";
+    const currentReturnPath = typeof window !== "undefined" ? (window.location.pathname + window.location.search) : `/apps/navratri/campaigns/${campaign.slug}`;
+    const fullLoginUrl = `${storeOrigin}/account/login?return_url=${encodeURIComponent(currentReturnPath)}`;
+
     const a = document.createElement("a");
-    a.href = "/account/login?return_url=" + encodeURIComponent(window.location.pathname);
+    a.href = fullLoginUrl;
+    a.setAttribute("data-gokwik-login", "true");
     a.style.display = "none";
     document.body.appendChild(a);
-    a.click();
-    setTimeout(() => { if(a.parentNode) a.parentNode.removeChild(a); }, 1000);
+
+    const clickEvent = new MouseEvent("click", {
+      bubbles: true,
+      cancelable: true,
+      view: window,
+    });
+
+    let defaultPrevented = false;
+    try {
+      defaultPrevented = !a.dispatchEvent(clickEvent);
+    } catch {
+      // Ignore dispatch errors
+    }
+
+    if (!defaultPrevented) {
+      if (window.top) {
+        window.top.location.href = fullLoginUrl;
+      } else {
+        window.location.href = fullLoginUrl;
+      }
+    }
+
+    setTimeout(() => { if (a.parentNode) a.parentNode.removeChild(a); }, 1000);
   };
 
   const handleOpenLevel = (lvl: (typeof levels)[0]) => {
@@ -1543,7 +1576,7 @@ export default function CustomerCampaignPage() {
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap", justifyContent: "flex-end" }}>
             {isAuthenticated && (
-              <a href={logoutUrl} target="_top" rel="noreferrer" className="back-to-store-link" aria-label="Log out of your store account">
+              <a href={resolvedLogoutUrl} target="_top" rel="noreferrer" className="back-to-store-link" aria-label="Log out of your store account">
                 Log out
               </a>
             )}
