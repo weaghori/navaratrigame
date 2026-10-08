@@ -157,20 +157,12 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
     const proxyCustomerId = url.searchParams.get("logged_in_customer_id");
     const signedLiquidCustomerId = getSignedLiquidCustomerId(url);
 
+    const isDataRequest = url.searchParams.has("_data");
     const isGuest = url.searchParams.get("guest") === "true";
 
-    if (proxyCustomerId && proxyCustomerId.trim() !== "") {
-      customerId = proxyCustomerId.trim();
-    } else if (signedLiquidCustomerId) {
-      customerId = signedLiquidCustomerId;
-    } else if (session) {
-      const accessInfo = (session as unknown as Record<string, unknown>).onlineAccessInfo as
-        | { associated_user?: { id?: number | string } }
-        | undefined;
-      if (accessInfo?.associated_user?.id) {
-        customerId = String(accessInfo.associated_user.id);
-      }
-    } else if (!isGuest && isProxyRequest) {
+    // ALWAYS bounce once via Liquid to get the customer's email/phone for their display name.
+    // If we only rely on proxyCustomerId, we miss the display name completely.
+    if (!signedLiquidCustomerId && !isGuest && isProxyRequest && !isDataRequest) {
       return new Response(
         `
         {% if customer %}
@@ -206,6 +198,19 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
           },
         }
       );
+    }
+
+    if (signedLiquidCustomerId) {
+      customerId = signedLiquidCustomerId;
+    } else if (proxyCustomerId && proxyCustomerId.trim() !== "") {
+      customerId = proxyCustomerId.trim();
+    } else if (session) {
+      const accessInfo = (session as unknown as Record<string, unknown>).onlineAccessInfo as
+        | { associated_user?: { id?: number | string } }
+        | undefined;
+      if (accessInfo?.associated_user?.id) {
+        customerId = String(accessInfo.associated_user.id);
+      }
     }
   } catch {
     // Standalone or direct local development view — not a signed proxy request
