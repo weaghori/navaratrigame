@@ -147,8 +147,11 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   let customerId: string | null = null;
   let isProxyRequest = false;
   let shopDomain: string | undefined;
+  let proxyAdmin: { graphql: (query: string, options?: { variables?: Record<string, unknown> }) => Promise<Response> } | null = null;
   try {
-    const { session } = await authenticate.public.appProxy(request);
+    const proxyAuth = await authenticate.public.appProxy(request);
+    const { session } = proxyAuth;
+    proxyAdmin = (proxyAuth as unknown as Record<string, unknown>).admin as typeof proxyAdmin ?? null;
     isProxyRequest = true; // proxy auth succeeded → request came from Shopify
     // Extract shop domain from proxy session for multi-store isolation
     shopDomain = (session as unknown as Record<string, unknown> | undefined)?.shop as string | undefined
@@ -222,52 +225,77 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   const isStorefrontProxyPath = url.pathname === "/apps/navratri" || url.pathname.startsWith("/apps/navratri/");
   const proxyBasePath = isProxyRequest || isStorefrontProxyPath ? "/apps/navratri" : "";
   const returnPath = `${proxyBasePath}/campaigns/${campaign.slug}`;
-  const storefrontUrl = /^[a-z0-9][a-z0-9-]*\.myshopify\.com$/i.test(campaign.shop)
-    ? `https://${campaign.shop}`
+
+  // Use the live shopDomain (from proxy session) for building account URLs.
+  // campaign.shop may contain the dev/seed store domain and must NOT be used for URLs.
+  const liveShopDomain = shopDomain || campaign.shop;
+  const storefrontUrl = /^[a-z0-9][a-z0-9-]*\.myshopify\.com$/i.test(liveShopDomain)
+    ? `https://${liveShopDomain}`
     : null;
   // Account routes belong to Shopify's storefront domain, never the app tunnel
   // host (which doesn't serve /account/logout or customer authentication).
   const accountBaseUrl = storefrontUrl || "";
-  const accountReturnPath = storefrontUrl ? `/apps/navratri/campaigns/${campaign.slug}` : returnPath;
+  const accountReturnPath = `/apps/navratri/campaigns/${campaign.slug}`;
   const loginUrl = `${accountBaseUrl}/customer_authentication/login?return_to=${encodeURIComponent(accountReturnPath)}`;
   const logoutUrl = `${accountBaseUrl}/account/logout?return_url=${encodeURIComponent(accountReturnPath)}`;
 
-  // Resolve customer display name via Shopify Admin API when not available from signed Liquid params.
+  // Resolve customer display name via Shopify Admin API (using the built-in proxy admin client).
   // This replaces the old Liquid bounce redirect which caused infinite loops on Shopify App Proxy.
   let resolvedDisplayName: string | null = customerDisplayName;
   let resolvedIdentifier: string | null = customerIdentifier;
-  if (isAuthenticated && customerId && !resolvedDisplayName && shopDomain) {
+  if (isAuthenticated && customerId && !resolvedDisplayName) {
     try {
       const numericCustomerId = customerId.replace(/\D/g, "");
       const shopifyCustomerGid = `gid://shopify/Customer/${numericCustomerId}`;
-      const shopifyAdminUrl = `https://${shopDomain}/admin/api/2024-10/graphql.json`;
-      const adminToken = process.env.SHOPIFY_ACCESS_TOKEN || process.env.ADMIN_ACCESS_TOKEN;
-      if (adminToken) {
-        const gqlRes = await fetch(shopifyAdminUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "X-Shopify-Access-Token": adminToken },
-          body: JSON.stringify({
-            query: `query GetCustomer($id: ID!) { customer(id: $id) { email phone firstName lastName } }`,
-            variables: { id: shopifyCustomerGid },
-          }),
-        });
-        if (gqlRes.ok) {
-          const gqlData = await gqlRes.json() as { data?: { customer?: { email?: string; phone?: string; firstName?: string; lastName?: string } } };
-          const cust = gqlData?.data?.customer;
-          if (cust) {
-            const emailLocal = cust.email?.split("@")[0]?.trim();
-            const phoneLocal = cust.phone?.replace(/\D/g, "").slice(-4);
-            resolvedDisplayName = emailLocal || (cust.firstName ? cust.firstName.trim() : null) || (phoneLocal ? `+${phoneLocal}` : null);
-            resolvedIdentifier = cust.email || cust.phone || null;
-          }
+
+      // Prefer the authenticated admin client from the proxy session (no extra env vars needed)
+      if (proxyAdmin) {
+        const gqlResponse = await proxyAdmin.graphql(
+          `#graphql
+          query GetCustomer($id: ID!) {
+            customer(id: $id) { email phone firstName lastName }
+          }`,
+          { variables: { id: shopifyCustomerGid } }
+        );
+        const gqlData = await gqlResponse.json() as { data?: { customer?: { email?: string; phone?: string; firstName?: string; lastName?: string } } };
+        const cust = gqlData?.data?.customer;
+        if (cust) {
+          const emailLocal = cust.email?.split("@")[0]?.trim();
+          const phoneLocal = cust.phone?.replace(/\D/g, "").slice(-4);
+          resolvedDisplayName = emailLocal || (cust.firstName ? cust.firstName.trim() : null) || (phoneLocal ? `+${phoneLocal}` : null);
+          resolvedIdentifier = cust.email || cust.phone || null;
         }
       } else {
-        // No admin token: fall back to existing DB display name (read after getOrCreateCustomerProgress below)
-        const existingProgress = await prisma.customerProgress.findUnique({
-          where: { campaignId_shopifyCustomerId: { campaignId: campaign.id, shopifyCustomerId: customerId } },
-          select: { displayName: true },
-        });
-        resolvedDisplayName = existingProgress?.displayName || null;
+        // Fallback: raw Admin API call with env token
+        const shopifyAdminUrl = `https://${liveShopDomain}/admin/api/2024-10/graphql.json`;
+        const adminToken = process.env.SHOPIFY_ACCESS_TOKEN || process.env.ADMIN_ACCESS_TOKEN;
+        if (adminToken) {
+          const gqlRes = await fetch(shopifyAdminUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "X-Shopify-Access-Token": adminToken },
+            body: JSON.stringify({
+              query: `query GetCustomer($id: ID!) { customer(id: $id) { email phone firstName lastName } }`,
+              variables: { id: shopifyCustomerGid },
+            }),
+          });
+          if (gqlRes.ok) {
+            const gqlData = await gqlRes.json() as { data?: { customer?: { email?: string; phone?: string; firstName?: string; lastName?: string } } };
+            const cust = gqlData?.data?.customer;
+            if (cust) {
+              const emailLocal = cust.email?.split("@")[0]?.trim();
+              const phoneLocal = cust.phone?.replace(/\D/g, "").slice(-4);
+              resolvedDisplayName = emailLocal || (cust.firstName ? cust.firstName.trim() : null) || (phoneLocal ? `+${phoneLocal}` : null);
+              resolvedIdentifier = cust.email || cust.phone || null;
+            }
+          }
+        } else {
+          // No admin access at all: fall back to existing DB display name
+          const existingProgress = await prisma.customerProgress.findUnique({
+            where: { campaignId_shopifyCustomerId: { campaignId: campaign.id, shopifyCustomerId: customerId } },
+            select: { displayName: true },
+          });
+          resolvedDisplayName = existingProgress?.displayName || null;
+        }
       }
     } catch {
       // Non-fatal: display name will fall back to "Player" in the UI
