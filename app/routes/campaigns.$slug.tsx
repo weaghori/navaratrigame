@@ -159,10 +159,11 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
 
     const isDataRequest = url.searchParams.has("_data");
     const isGuest = url.searchParams.get("guest") === "true";
+    const hasLiquidId = url.searchParams.has("customer_id_from_liquid");
 
     // ALWAYS bounce once via Liquid to get the customer's email/phone for their display name.
-    // If we only rely on proxyCustomerId, we miss the display name completely.
-    if (!signedLiquidCustomerId && !isGuest && isProxyRequest && !isDataRequest) {
+    // We check !hasLiquidId instead of !signedLiquidCustomerId to prevent infinite loops if the signature check fails.
+    if (!hasLiquidId && !isGuest && isProxyRequest && !isDataRequest) {
       return new Response(
         `
         {% if customer %}
