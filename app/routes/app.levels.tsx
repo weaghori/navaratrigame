@@ -8,7 +8,7 @@ import { getActiveCampaign } from "../services/campaign.server";
 import prisma from "../db.server";
 import { campaignLevelTemplate } from "../services/campaign-level-template";
 import { QuizQuestionEditor } from "../components/activities/QuizQuestionEditor";
-import type { Prisma } from "../../generated/mongodb-runtime-client/index.js";
+import type { Prisma } from "@prisma/client";
 
 const defaultActivityConfig: Record<string, Record<string, unknown>> = {
   spin_wheel: { rewards: ["10% OFF", "15% OFF", "20% OFF"], discountPercent: 10, wheelTitle: "SPIN TO WIN", wheelRibbonText: "FORTUNE WHEEL", spinButtonText: "Spin & Win", instructions: "Spin the wheel and unlock your Navratri surprise!", offerMessage: "Congratulations! You got this offer. Your code is ready to use at checkout." },

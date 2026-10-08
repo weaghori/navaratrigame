@@ -1,4 +1,4 @@
-import { PrismaClient } from "../generated/mongodb-runtime-client/index.js";
+import { PrismaClient } from "@prisma/client";
 import { campaignLevelTemplate } from "../app/services/campaign-level-template";
 
 const prisma = new PrismaClient();

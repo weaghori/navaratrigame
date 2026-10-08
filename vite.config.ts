@@ -68,7 +68,7 @@ export default defineConfig({
   build: {
     assetsInlineLimit: 0,
     commonjsOptions: {
-      include: [/node_modules/, /generated[\\/]mongodb-runtime-client/],
+
     },
   },
   optimizeDeps: {

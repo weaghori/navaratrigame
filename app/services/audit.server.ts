@@ -1,4 +1,4 @@
-import type { Prisma } from "../../generated/mongodb-runtime-client/index.js";
+import type { Prisma } from "@prisma/client";
 import prisma from "../db.server";
 
 export type AuditActorType = "CUSTOMER" | "ADMIN" | "SYSTEM";

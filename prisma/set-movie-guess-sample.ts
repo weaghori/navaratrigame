@@ -1,4 +1,4 @@
-import { PrismaClient } from "../generated/mongodb-runtime-client/index.js";
+import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
