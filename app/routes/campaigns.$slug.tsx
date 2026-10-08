@@ -1142,20 +1142,24 @@ export default function CustomerCampaignPage() {
   const pointsBarMax = 1500;
   const percentage = Math.min(100, Math.round((progress.totalPoints / pointsBarMax) * 100));
 
-  // GoKwik / KwikPass compatible login. Tries GoKwik SDK first, falls back to Shopify login URL.
+  // GoKwik / KwikPass compatible login.
   const triggerLogin = () => {
     const win = window as unknown as Record<string, unknown>;
     if (win.GoKwikUI && typeof (win.GoKwikUI as Record<string, unknown>).login === "function") {
       (win.GoKwikUI as Record<string, () => void>).login(); return;
     }
-    if (win.__goKwikSDK && typeof (win.__goKwikSDK as Record<string, unknown>).triggerLogin === "function") {
-      (win.__goKwikSDK as Record<string, () => void>).triggerLogin(); return;
+    if (win.Kwikpass && typeof (win.Kwikpass as Record<string, unknown>).login === "function") {
+      (win.Kwikpass as Record<string, () => void>).login(); return;
     }
-    const gkBtn = document.querySelector<HTMLElement>("[data-gk-trigger=\"login\"]");
-    if (gkBtn) { gkBtn.click(); return; }
-    const acct = document.querySelector<HTMLElement>("a[href*=\"/account\"], .header__icon--account");
-    if (acct) { acct.click(); return; }
-    window.location.href = loginUrl;
+    
+    // Create a native login link and click it. 
+    // GoKwik/Kwikpass actively intercepts clicks on /account/login links on the store.
+    const a = document.createElement("a");
+    a.href = "/account/login?return_url=" + encodeURIComponent(window.location.pathname);
+    a.style.display = "none";
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { if(a.parentNode) a.parentNode.removeChild(a); }, 1000);
   };
 
   const handleOpenLevel = (lvl: (typeof levels)[0]) => {
