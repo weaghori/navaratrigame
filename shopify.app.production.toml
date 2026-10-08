@@ -1,10 +1,7 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
-# REQUIRED BEFORE PRODUCTION CONFIG DEPLOY:
-# Replace this sentinel with the permanent Vercel production origin and use the
-# identical value for SHOPIFY_APP_URL. Do not deploy this file while it remains.
 client_id = "d6df797638ae5c7f928c25df490169d3"
-application_url = "https://replace-with-vercel-host.vercel.app"
+application_url = "https://navaratrigame.vercel.app"
 embedded = true
 name = "navratri app"
 
@@ -38,10 +35,15 @@ type = "multi_line_text_field"
 
 [webhooks]
 api_version = "2026-10"
-[webhooks.privacy_compliance]
-customer_deletion_url = "https://replace-with-vercel-host.vercel.app/webhooks/customers/redact"
-customer_data_request_url = "https://replace-with-vercel-host.vercel.app/webhooks/customers/data_request"
-shop_deletion_url = "https://replace-with-vercel-host.vercel.app/webhooks/shop/redact"
+# NOTE: privacy_compliance webhooks (customers/redact, customers/data_request, shop/redact)
+# require Shopify Protected Customer Data approval before they can be registered here.
+# The route handlers already exist in the codebase. Add this block after approval:
+#
+# [webhooks.privacy_compliance]
+# customer_deletion_url = "https://navaratrigame.vercel.app/webhooks/customers/redact"
+# customer_data_request_url = "https://navaratrigame.vercel.app/webhooks/customers/data_request"
+# shop_deletion_url = "https://navaratrigame.vercel.app/webhooks/shop/redact"
+
   [[webhooks.subscriptions]]
   uri = "/webhooks/app/uninstalled"
   topics = [ "app/uninstalled" ]
@@ -50,13 +52,15 @@ shop_deletion_url = "https://replace-with-vercel-host.vercel.app/webhooks/shop/r
   uri = "/webhooks/app/scopes_update"
   topics = [ "app/scopes_update" ]
 
-  [[webhooks.subscriptions]]
-  uri = "/webhooks/orders/paid"
-  topics = [ "orders/paid" ]
+  # orders/paid contains protected customer data and requires Shopify approval.
+  # Re-add after Protected Customer Data access is granted:
+  # [[webhooks.subscriptions]]
+  # uri = "/webhooks/orders/paid"
+  # topics = [ "orders/paid" ]
 
 [auth]
 redirect_urls = [
-  "https://replace-with-vercel-host.vercel.app/auth/callback"
+  "https://navaratrigame.vercel.app/auth/callback"
 ]
 
 [app_proxy]
@@ -65,6 +69,5 @@ subpath = "navratri"
 prefix = "apps"
 
 [build]
-include_config_on_deploy = true
 automatically_update_urls_on_dev = true
 pre_dev = "echo Skipping prisma generate (already generated)"

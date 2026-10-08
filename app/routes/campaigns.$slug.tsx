@@ -1142,11 +1142,27 @@ export default function CustomerCampaignPage() {
   const pointsBarMax = 1500;
   const percentage = Math.min(100, Math.round((progress.totalPoints / pointsBarMax) * 100));
 
+  // GoKwik / KwikPass compatible login. Tries GoKwik SDK first, falls back to Shopify login URL.
+  const triggerLogin = () => {
+    const win = window as unknown as Record<string, unknown>;
+    if (win.GoKwikUI && typeof (win.GoKwikUI as Record<string, unknown>).login === "function") {
+      (win.GoKwikUI as Record<string, () => void>).login(); return;
+    }
+    if (win.__goKwikSDK && typeof (win.__goKwikSDK as Record<string, unknown>).triggerLogin === "function") {
+      (win.__goKwikSDK as Record<string, () => void>).triggerLogin(); return;
+    }
+    const gkBtn = document.querySelector<HTMLElement>("[data-gk-trigger=\"login\"]");
+    if (gkBtn) { gkBtn.click(); return; }
+    const acct = document.querySelector<HTMLElement>("a[href*=\"/account\"], .header__icon--account");
+    if (acct) { acct.click(); return; }
+    window.location.href = loginUrl;
+  };
+
   const handleOpenLevel = (lvl: (typeof levels)[0]) => {
     if (lvl.state !== "AVAILABLE" && lvl.state !== "REJECTED") return;
     if (!isAuthenticated) {
-      window.location.href = loginUrl;
-      return;
+      triggerLogin(); return;
+
     }
     setActiveLevelModal(lvl);
     setSpinPrize(null);
@@ -1557,9 +1573,9 @@ export default function CustomerCampaignPage() {
             <p className="login-card-desc">
               Sign in with your store account to start Day 1, collect 1,000 points across 9 daily challenges, and unlock exclusive festive rewards!
             </p>
-            <a href={loginUrl} className="login-card-cta">
+            <button type="button" className="login-card-cta" onClick={triggerLogin}>
               Login to Continue →
-            </a>
+            </button>
           </div>
         )}
 
