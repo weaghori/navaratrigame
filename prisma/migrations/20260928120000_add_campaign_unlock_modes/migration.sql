@@ -1,0 +1,3 @@
+ALTER TABLE "Campaign"
+ADD COLUMN "unlockMode" TEXT NOT NULL DEFAULT 'sequential',
+ADD COLUMN "unlockIntervalHours" INTEGER NOT NULL DEFAULT 24;

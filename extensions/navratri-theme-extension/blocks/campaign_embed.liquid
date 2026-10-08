@@ -1,0 +1,31 @@
+{% if block.settings.enable_embed %}
+  <div class="navratri-campaign-embed" style="max-width: 680px; margin: 24px auto; padding: 0 16px;">
+    <iframe
+      src="/apps/navratri/campaigns/{{ block.settings.campaign_slug }}/"
+      style="width: 100%; min-height: 900px; border: none; border-radius: 16px; box-shadow: 0 8px 30px rgba(0,0,0,0.08);"
+      title="Navratri Gamification Challenge"
+      loading="lazy"
+    ></iframe>
+  </div>
+{% endif %}
+
+{% schema %}
+{
+  "name": "Navratri Campaign Embed",
+  "target": "section",
+  "settings": [
+    {
+      "type": "checkbox",
+      "id": "enable_embed",
+      "label": "Enable Challenge Embed",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "campaign_slug",
+      "label": "Campaign Slug",
+      "default": "navratri-2026"
+    }
+  ]
+}
+{% endschema %}

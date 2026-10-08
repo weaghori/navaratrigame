@@ -1,0 +1,76 @@
+.navratri-treasure-block {
+  z-index: 3;
+  margin: 12px 0;
+}
+
+.navratri-treasure-embed {
+  position: fixed;
+  z-index: 2147483000;
+  margin: 0;
+  padding: 4px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+}
+
+.navratri-treasure-embed .navratri-treasure-button {
+  width: 42px;
+  height: 42px;
+  justify-content: center;
+  padding: 0;
+  border: 2px solid #d4a72c;
+  border-radius: 50%;
+  background: #fff7d6;
+  box-shadow: 0 6px 22px rgb(0 0 0 / 28%);
+  font-size: 21px;
+  opacity: 0.86;
+  animation: navratri-treasure-float 3.2s ease-in-out infinite;
+}
+
+.navratri-treasure-embed [data-treasure-label] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+@keyframes navratri-treasure-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+.navratri-treasure-embed[hidden] {
+  display: none !important;
+}
+
+.navratri-treasure-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border: 1px solid #d4a72c;
+  border-radius: 999px;
+  background: #fff7d6;
+  color: #3d2b05;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.navratri-treasure-button:hover {
+  background: #fde68a;
+}
+
+.navratri-treasure-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.navratri-treasure-message {
+  margin: 6px 0 0;
+  font-size: 13px;
+}
+
+.navratri-treasure-embed .navratri-treasure-message:empty {
+  display: none;
+}

@@ -1,0 +1,78 @@
+{{ 'campaign_banner.css' | asset_url | stylesheet_tag }}
+
+{% if block.settings.enable_banner %}
+  <div class="navratri-banner-container" style="background: {{ block.settings.background_gradient }};">
+    <div class="navratri-banner-content">
+      <div class="navratri-banner-badge">{{ block.settings.badge_text }}</div>
+      <h2 class="navratri-banner-heading">{{ block.settings.heading }}</h2>
+      <p class="navratri-banner-desc">{{ block.settings.description }}</p>
+      <div class="navratri-banner-action">
+        <a href="/apps/navratri/campaigns/{{ block.settings.campaign_slug }}/" class="navratri-banner-btn">
+          {{ block.settings.button_text }} ➔
+        </a>
+      </div>
+    </div>
+    {% if block.settings.banner_image != blank %}
+      <div class="navratri-banner-image">
+        {{ block.settings.banner_image | image_url: width: 300 | image_tag: class: 'navratri-banner-img' }}
+      </div>
+    {% endif %}
+  </div>
+{% endif %}
+
+{% schema %}
+{
+  "name": "Navratri Campaign Banner",
+  "target": "section",
+  "stylesheet": "campaign_banner.css",
+  "settings": [
+    {
+      "type": "checkbox",
+      "id": "enable_banner",
+      "label": "Enable Campaign Banner",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "badge_text",
+      "label": "Badge Text",
+      "default": "🪔 9 Days of Navratri"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Join the Navratri Gamification Challenge!"
+    },
+    {
+      "type": "textarea",
+      "id": "description",
+      "label": "Description",
+      "default": "Complete 9 daily festive challenges, collect 1,000 points, and unlock exclusive rewards & grand hampers!"
+    },
+    {
+      "type": "text",
+      "id": "button_text",
+      "label": "Button Text",
+      "default": "Play & Earn Rewards"
+    },
+    {
+      "type": "text",
+      "id": "campaign_slug",
+      "label": "Campaign Slug",
+      "default": "navratri-2026"
+    },
+    {
+      "type": "image_picker",
+      "id": "banner_image",
+      "label": "Banner Graphic (Optional)"
+    },
+    {
+      "type": "color_background",
+      "id": "background_gradient",
+      "label": "Background Gradient",
+      "default": "linear-gradient(135deg, #064e3b 0%, #065f46 60%, #047857 100%)"
+    }
+  ]
+}
+{% endschema %}

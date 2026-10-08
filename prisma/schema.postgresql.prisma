@@ -1,0 +1,383 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/postgresql-migration-client"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// =====================================================
+// SHOPIFY SESSION
+// =====================================================
+
+model Session {
+  id                  String    @id
+  shop                String
+  state               String
+  isOnline            Boolean   @default(false)
+  scope               String?
+  expires             DateTime?
+  accessToken         String
+  userId              BigInt?
+  firstName           String?
+  lastName            String?
+  email               String?
+  accountOwner        Boolean   @default(false)
+  locale              String?
+  collaborator        Boolean?  @default(false)
+  emailVerified       Boolean?  @default(false)
+  refreshToken        String?
+  refreshTokenExpires DateTime?
+}
+
+// =====================================================
+// CAMPAIGN
+// =====================================================
+
+model Campaign {
+  id          String  @id @default(cuid())
+  shop        String  @default("demo-store.myshopify.com")
+  name        String
+  slug        String
+  description String?
+
+  startDate DateTime
+  endDate   DateTime
+
+  status    String @default("draft")
+  maxPoints Int    @default(1000)
+  unlockMode String @default("sequential")
+  unlockIntervalHours Int @default(24)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  levels           Level[]
+  customerProgress CustomerProgress[]
+  submissions      Submission[]
+  referrals        Referral[]
+  rewards          Reward[]
+  winners          Winner[]
+  purchaseVerifications PurchaseVerification[]
+
+  @@unique([shop, slug])
+  @@index([shop])
+}
+
+// =====================================================
+// LEVELS / ACTIVITIES
+// =====================================================
+
+model Level {
+  id String @id @default(cuid())
+
+  campaignId String
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  levelNumber Int
+  title       String
+  description String?
+
+  // quiz / photo / video / referral / purchase / social / custom
+  activityType String
+
+  points Int @default(100)
+
+  // Flexible configuration for the activity
+  config Json?
+
+  isActive Boolean @default(true)
+
+  // Release / availability timing
+  availableFrom  DateTime?
+  availableUntil DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  pointTransactions PointTransaction[]
+  submissions       Submission[]
+
+  @@unique([campaignId, levelNumber])
+  @@index([campaignId])
+}
+
+// =====================================================
+// CUSTOMER PROGRESS
+// =====================================================
+
+model CustomerProgress {
+  id String @id @default(cuid())
+
+  campaignId String
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  // Shopify Customer ID / GID
+  shopifyCustomerId String
+  displayName       String?
+
+  totalPoints  Int @default(0)
+  currentLevel Int @default(1)
+
+  // active / completed / eligible / winner
+  status String @default("active")
+
+  eligibleAt  DateTime?
+  completedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  pointTransactions PointTransaction[]
+  submissions       Submission[]
+  rewards           Reward[]
+  winner            Winner?
+  purchaseVerifications PurchaseVerification[]
+
+  @@unique([campaignId, shopifyCustomerId])
+  @@index([shopifyCustomerId])
+  @@index([campaignId, totalPoints])
+}
+
+// =====================================================
+// POINT TRANSACTIONS
+// =====================================================
+
+model PointTransaction {
+  id String @id @default(cuid())
+
+  customerProgressId String
+  customerProgress   CustomerProgress @relation(fields: [customerProgressId], references: [id], onDelete: Cascade)
+
+  levelId String?
+  level   Level?  @relation(fields: [levelId], references: [id], onDelete: SetNull)
+
+  // Positive = earned
+  // Negative = deducted
+  points Int
+
+  // level_completed / quiz_completed / submission_approved /
+  // referral_completed / admin_adjustment / reward_deduction
+  transactionType String
+
+  referenceId String?
+  description String?
+
+  createdAt DateTime @default(now())
+
+  @@unique([customerProgressId, levelId, transactionType])
+  @@index([customerProgressId])
+  @@index([levelId])
+  @@index([createdAt])
+}
+
+// =====================================================
+// SUBMISSIONS
+// =====================================================
+
+model Submission {
+  id String @id @default(cuid())
+
+  campaignId String
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  levelId String
+  level   Level  @relation(fields: [levelId], references: [id], onDelete: Cascade)
+
+  customerProgressId String
+  customerProgress   CustomerProgress @relation(fields: [customerProgressId], references: [id], onDelete: Cascade)
+
+  // photo / video / quiz / text
+  submissionType String
+
+  // Uploaded file URL
+  fileUrl String?
+
+  // Optional text submitted by customer
+  textResponse String?
+
+  // Optional quiz answer/data
+  quizAnswer Json?
+
+  // pending / approved / rejected
+  status String @default("pending")
+
+  adminNote String?
+
+  reviewedBy String?
+  reviewedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([levelId, customerProgressId])
+  @@index([campaignId])
+  @@index([customerProgressId])
+  @@index([status])
+}
+
+// =====================================================
+// REFERRALS
+// =====================================================
+
+model Referral {
+  id String @id @default(cuid())
+
+  campaignId String
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  // Customer who shared the referral
+  referrerCustomerId String
+
+  // Customer who joined through referral
+  referredCustomerId String?
+
+  referralCode String
+
+  // pending / completed / rejected
+  status String @default("pending")
+
+  points Int @default(0)
+
+  completedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([campaignId, referralCode])
+  @@index([referrerCustomerId])
+  @@index([referredCustomerId])
+  @@index([campaignId])
+}
+
+// =====================================================
+// REWARDS
+// =====================================================
+
+model Reward {
+  id String @id @default(cuid())
+
+  campaignId String
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  customerProgressId String
+  customerProgress   CustomerProgress @relation(fields: [customerProgressId], references: [id], onDelete: Cascade)
+
+  shopifyCustomerId String
+
+  // discount / product / hamper / custom
+  rewardType String
+
+  rewardValue Int?
+
+  // Shopify discount code
+  discountCode String? @unique
+  shopifyDiscountId String?
+  prizeLabel String?
+  offerMessage String?
+
+  // pending / issued / used / expired / cancelled
+  status String @default("pending")
+
+  issuedAt  DateTime?
+  usedAt    DateTime?
+  expiresAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([campaignId, customerProgressId, rewardType])
+  @@index([shopifyCustomerId])
+  @@index([campaignId])
+  @@index([status])
+}
+
+// =====================================================
+// WINNERS / TOP 25
+// =====================================================
+
+model Winner {
+  id String @id @default(cuid())
+
+  campaignId String
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  customerProgressId String           @unique
+  customerProgress   CustomerProgress @relation(fields: [customerProgressId], references: [id], onDelete: Cascade)
+
+  shopifyCustomerId String
+
+  // Selected winner position
+  rank Int
+
+  rewardAssigned Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  @@unique([campaignId, rank])
+  @@index([campaignId])
+  @@index([shopifyCustomerId])
+}
+
+// Paid Shopify orders that qualify for the final campaign purchase level.
+// The order ID is scoped by shop so webhook retries are idempotent.
+model PurchaseVerification {
+  id                 String           @id @default(cuid())
+  shop               String
+  shopifyOrderId     String
+  orderName          String?
+  totalPrice         Float
+  paidAt             DateTime
+  campaignId         String
+  campaign           Campaign         @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  customerProgressId String
+  customerProgress   CustomerProgress @relation(fields: [customerProgressId], references: [id], onDelete: Cascade)
+  completedAt        DateTime?
+  createdAt          DateTime         @default(now())
+
+  @@unique([shop, shopifyOrderId])
+  @@index([campaignId, customerProgressId, completedAt])
+}
+
+// =====================================================
+// NOTIFICATIONS
+// =====================================================
+
+model Notification {
+  id            String    @id @default(cuid())
+  recipientType String    // ADMIN / CUSTOMER
+  recipientId   String    // shopifyCustomerId or admin shop / "admin"
+  campaignId    String
+  type          String    // NEW_SUBMISSION, SUBMISSION_APPROVED, SUBMISSION_REJECTED, NEW_ELIGIBLE_CUSTOMER, TOP_25_CHANGE, REWARD_READY, REFERRAL_COMPLETED, LEVEL_UNLOCKED, POINTS_EARNED, ELIGIBLE, WINNER, REWARD_ISSUED
+  title         String
+  message       String
+  data          Json?
+  actionUrl     String?
+  readAt        DateTime?
+  createdAt     DateTime  @default(now())
+
+  @@index([recipientType, recipientId, readAt])
+  @@index([campaignId, createdAt])
+}
+
+// =====================================================
+// AUDIT EVENT LOG
+// =====================================================
+
+model AuditEvent {
+  id          String   @id @default(cuid())
+  campaignId  String
+  eventType   String   // CUSTOMER_REGISTERED, LEVEL_STARTED, SUBMISSION_CREATED, SUBMISSION_APPROVED, SUBMISSION_REJECTED, POINTS_AWARDED, REFERRAL_CREATED, REFERRAL_COMPLETED, ELIGIBILITY_REACHED, WINNER_FINALIZED, REWARD_ISSUED
+  actorType   String   // CUSTOMER / ADMIN / SYSTEM
+  actorId     String
+  targetId    String?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  @@index([campaignId, createdAt])
+  @@index([eventType])
+}
+

@@ -1,0 +1,37 @@
+# Local development config. The production config keeps the orders/paid webhook;
+# this dev preview omits it so Shopify can preview while protected-data approval is pending.
+client_id = "d6df797638ae5c7f928c25df490169d3"
+application_url = "https://example.com"
+embedded = true
+name = "navratri app"
+
+[access_scopes]
+scopes = "read_products,write_products,read_orders,write_metaobjects,write_metaobject_definitions,write_discounts,read_discounts,write_price_rules,read_price_rules,write_app_proxy"
+
+[webhooks]
+api_version = "2026-10"
+
+  [[webhooks.subscriptions]]
+  uri = "/webhooks/app/uninstalled"
+  topics = [ "app/uninstalled" ]
+
+  [[webhooks.subscriptions]]
+  uri = "/webhooks/app/scopes_update"
+  topics = [ "app/scopes_update" ]
+
+[app_proxy]
+url = "/apps/navratri"
+subpath = "navratri"
+prefix = "apps"
+
+[auth]
+redirect_urls = [
+  "https://example.com/api/auth",
+  "https://example.com/auth/callback",
+  "https://example.com/auth/shopify/callback"
+]
+
+[build]
+include_config_on_deploy = true
+automatically_update_urls_on_dev = true
+pre_dev = "echo Skipping prisma generate (already generated)"

@@ -1,0 +1,11 @@
+.cache
+build
+node_modules
+.git
+.codex
+.cursor
+.gemini
+.react-router
+.env
+.env.*
+!.env.example

@@ -1,0 +1,97 @@
+{
+  "name": "navratri-app",
+  "private": true,
+  "scripts": {
+    "build": "npm run setup && react-router build",
+    "predev": "npm run setup",
+    "dev": "shopify app dev --config dev",
+    "config:link": "shopify app config link",
+    "generate": "shopify app generate",
+    "deploy": "shopify app deploy --config production",
+    "config:use": "shopify app config use",
+    "env": "shopify app env",
+    "prestart": "npm run setup",
+    "start": "react-router-serve ./build/server/index.js",
+    "docker-start": "npm run start",
+    "setup": "prisma generate",
+    "db:generate:migration-clients": "prisma generate --schema prisma/schema.postgresql.prisma && prisma generate --schema prisma/schema.mongodb.prisma",
+    "db:push:mongodb": "prisma db push --schema prisma/schema.mongodb.prisma",
+    "db:migrate:postgres-to-mongodb": "tsx scripts/migrate-postgres-to-mongodb.ts",
+    "db:migrate:supabase-to-r2": "tsx scripts/migrate-media-to-r2.ts",
+    "lint": "eslint --ignore-path .gitignore --cache --cache-location ./node_modules/.cache/eslint .",
+    "shopify": "shopify",
+    "prisma": "prisma",
+    "graphql-codegen": "graphql-codegen",
+    "vite": "vite",
+    "seed": "tsx prisma/seed.ts",
+    "typecheck": "react-router typegen && tsc --noEmit",
+    "seed:movie-guess": "tsx prisma/set-movie-guess-sample.ts"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=20.19 <22 || >=22.12"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.1146.0",
+    "@aws-sdk/s3-request-presigner": "^3.1147.0",
+    "@prisma/client": "^6.16.3",
+    "@react-router/dev": "7.18.2",
+    "@react-router/fs-routes": "7.18.2",
+    "@react-router/node": "7.18.2",
+    "@react-router/serve": "7.18.2",
+    "@shopify/app-bridge-react": "^4.2.4",
+    "@shopify/shopify-app-react-router": "^1.2.1",
+    "@shopify/shopify-app-session-storage-prisma": "^9.0.0",
+    "@vercel/react-router": "^1.3.7",
+    "isbot": "^5.1.31",
+    "prisma": "^6.16.3",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router": "7.18.2",
+    "sharp": "^0.35.5",
+    "vite-tsconfig-paths": "^5.1.4"
+  },
+  "devDependencies": {
+    "@shopify/api-codegen-preset": "^1.2.0",
+    "@shopify/polaris-types": "^1.0.1",
+    "@types/eslint": "^9.6.1",
+    "@types/node": "^22.18.8",
+    "@types/react": "^18.3.25",
+    "@types/react-dom": "^18.3.7",
+    "@typescript-eslint/eslint-plugin": "^6.21.0",
+    "@typescript-eslint/parser": "^6.21.0",
+    "eslint": "^8.57.1",
+    "eslint-import-resolver-typescript": "^3.10.1",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^4.6.2",
+    "graphql-config": "^5.1.1",
+    "prettier": "^3.6.2",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3",
+    "vite": "^6.3.6"
+  },
+  "workspaces": [
+    "extensions/*"
+  ],
+  "trustedDependencies": [
+    "@shopify/plugin-cloudflare"
+  ],
+  "overrides": {
+    "p-map": "^4.0.0",
+    "qs": "^6.16.0"
+  },
+  "resolutions": {
+    "qs": "^6.16.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "qs": "^6.16.0"
+    }
+  },
+  "author": "User"
+}

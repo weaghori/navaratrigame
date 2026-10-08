@@ -1,0 +1,7 @@
+name = "React Router"
+roles = ["frontend", "backend"]
+webhooks_path = "/webhooks/app/uninstalled"
+
+[commands]
+predev = "echo Skipping prisma generate (already generated)"
+dev = "npm exec react-router dev"

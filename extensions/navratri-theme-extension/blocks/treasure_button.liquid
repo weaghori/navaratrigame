@@ -1,0 +1,30 @@
+{% if product or collection %}
+  {{ 'treasure-button.css' | asset_url | stylesheet_tag }}
+  <div
+    class="navratri-treasure-block"
+    data-navratri-treasure
+    data-campaign-slug="{{ block.settings.campaign_slug | escape }}"
+    data-level-number="{{ block.settings.level_number }}"
+    data-product-handle="{% if product %}{{ product.handle | escape }}{% endif %}"
+    data-collection-handles="{% if product %}{{ product.collections | map: 'handle' | join: ',' | escape }}{% elsif collection %}{{ collection.handle | escape }}{% endif %}"
+    {{ block.shopify_attributes }}
+  >
+    <button class="navratri-treasure-button" type="button" data-treasure-claim disabled>
+      <span aria-hidden="true" data-treasure-icon>🎁</span>
+      <span data-treasure-label>Loading Navratri treasure…</span>
+    </button>
+    <p class="navratri-treasure-message" data-treasure-message aria-live="polite"></p>
+  </div>
+  <script src="{{ 'treasure-button.js' | asset_url }}" defer></script>
+{% endif %}
+
+{% schema %}
+{
+  "name": "Navratri treasure button",
+  "target": "section",
+  "settings": [
+    { "type": "text", "id": "campaign_slug", "label": "Campaign slug", "default": "navratri-2026" },
+    { "type": "range", "id": "level_number", "label": "Treasure hunt level", "min": 1, "max": 9, "step": 1, "default": 3 }
+  ]
+}
+{% endschema %}
