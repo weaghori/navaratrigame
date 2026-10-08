@@ -87,6 +87,8 @@ export function TextSubmissionActivity({
               padding: "12px",
               borderRadius: "10px",
               border: isValidLength ? "1.5px solid #cbd5e1" : "1.5px solid #b7791f",
+              background: "rgba(255, 255, 255, 0.95)",
+              color: "#1e293b",
               fontSize: "14px",
               lineHeight: "1.4",
               boxSizing: "border-box",

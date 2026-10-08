@@ -3139,3 +3139,137 @@ body {
   }
 }
 
+/* ==========================================================================
+   LEVEL 10: FINAL CHALLENGE CARD REDESIGN
+   ========================================================================== */
+.final-level-card {
+  background: linear-gradient(135deg, #250d18 0%, #1a0812 100%);
+  border: 2px solid #fbbf24 !important;
+  box-shadow: 0 8px 32px rgba(251, 191, 36, 0.25), inset 0 0 15px rgba(251, 191, 36, 0.1) !important;
+  position: relative;
+  overflow: hidden;
+}
+
+.final-level-card::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: radial-gradient(circle at center, rgba(251, 191, 36, 0.15) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+.final-card-top-bar {
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(251, 191, 36, 0.3);
+  padding-bottom: 12px;
+  margin-bottom: 16px;
+}
+
+.final-day-badge {
+  background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+  color: #fff !important;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  box-shadow: 0 2px 8px rgba(217, 119, 6, 0.4);
+}
+
+.final-card-title {
+  color: #fef08a !important;
+  font-size: 22px !important;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+  font-family: var(--font-serif);
+}
+
+.final-card-desc {
+  color: #fcd34d !important;
+  font-weight: 600;
+}
+
+.final-card-btn {
+  background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%) !important;
+  color: #170d30 !important;
+  font-weight: 900 !important;
+  box-shadow: 0 4px 15px rgba(217, 119, 6, 0.4) !important;
+  border: none !important;
+}
+
+.final-level-ornament {
+  display: flex;
+  justify-content: center;
+  margin: 12px 0;
+  filter: drop-shadow(0 0 8px rgba(251, 191, 36, 0.6));
+}
+
+/* ==========================================================================
+   MEMORY GAME REDESIGN (MATCH CARD GAME)
+   ========================================================================== */
+.memory-game-card {
+  background: transparent;
+  perspective: 1000px;
+  border: none;
+  padding: 0;
+  margin: 0;
+  width: 100%;
+  aspect-ratio: 1 / 1.2;
+  cursor: pointer;
+}
+
+.memory-card-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  text-align: center;
+  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-style: preserve-3d;
+}
+
+.memory-game-card.is-revealed .memory-card-inner {
+  transform: rotateY(180deg);
+}
+
+.memory-game-card.is-matched .memory-card-inner {
+  transform: rotateY(180deg) scale(1.05);
+}
+
+.memory-card-hidden, .memory-card-revealed {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.memory-card-hidden {
+  background: linear-gradient(135deg, #1d4ed8 0%, #1e3a8a 100%);
+  border: 2px solid #fbbf24;
+  color: #fbbf24;
+}
+
+.memory-card-hidden-pattern {
+  font-size: 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.2;
+}
+
+.memory-card-revealed {
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+  border: 2px solid #d97706;
+  color: #92400e;
+  transform: rotateY(180deg);
+  font-size: 28px;
+}
+
+.memory-game-card.is-matched .memory-card-revealed {
+  box-shadow: 0 0 15px rgba(251, 191, 36, 0.8), inset 0 0 10px rgba(251, 191, 36, 0.3);
+  border-color: #fbbf24;
+}

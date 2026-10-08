@@ -76,7 +76,7 @@ export function getLoginUrl(options?: URLOptions): string {
   const slug = options?.slug || CAMPAIGN_SLUG;
   const origin = getStorefrontOrigin(options);
   const returnPath = `/apps/navratri/campaigns/${slug}`;
-  return `${origin}/account/login?return_url=${encodeURIComponent(returnPath)}`;
+  return `${origin}/account/login?checkout_url=${encodeURIComponent(returnPath)}`;
 }
 
 /**

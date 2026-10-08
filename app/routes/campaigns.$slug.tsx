@@ -149,7 +149,7 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   let customerId: string | null = null;
   let isProxyRequest = false;
   let shopDomain: string | undefined;
-  let proxyAdmin: { graphql: (query: string, options?: { variables?: Record<string, unknown> }) => Promise<Response> } | null = null;
+  let proxyAdmin: any = null;
   try {
     const proxyAuth = await authenticate.public.appProxy(request);
     const { session } = proxyAuth;
@@ -241,7 +241,6 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   const logoutUrl = getLogoutUrl({ slug: campaign.slug, isDev, storefrontUrl });
 
   // Resolve customer display name via Shopify Admin API (using the built-in proxy admin client).
-  // This replaces the old Liquid bounce redirect which caused infinite loops on Shopify App Proxy.
   let resolvedDisplayName: string | null = customerDisplayName;
   let resolvedIdentifier: string | null = customerIdentifier;
   if (isAuthenticated && customerId && !resolvedDisplayName) {
@@ -261,9 +260,11 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
         const gqlData = await gqlResponse.json() as { data?: { customer?: { email?: string; phone?: string; firstName?: string; lastName?: string } } };
         const cust = gqlData?.data?.customer;
         if (cust) {
-          const emailLocal = cust.email?.split("@")[0]?.trim();
-          const phoneLocal = cust.phone?.replace(/\D/g, "").slice(-4);
-          resolvedDisplayName = emailLocal || (cust.firstName ? cust.firstName.trim() : null) || (phoneLocal ? `+${phoneLocal}` : null);
+          const firstName = cust.firstName?.trim();
+          const lastName = cust.lastName?.trim();
+          const fullName = [firstName, lastName].filter(Boolean).join(" ");
+          
+          resolvedDisplayName = fullName || null;
           resolvedIdentifier = cust.email || cust.phone || null;
         }
       } else {
@@ -283,9 +284,11 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
             const gqlData = await gqlRes.json() as { data?: { customer?: { email?: string; phone?: string; firstName?: string; lastName?: string } } };
             const cust = gqlData?.data?.customer;
             if (cust) {
-              const emailLocal = cust.email?.split("@")[0]?.trim();
-              const phoneLocal = cust.phone?.replace(/\D/g, "").slice(-4);
-              resolvedDisplayName = emailLocal || (cust.firstName ? cust.firstName.trim() : null) || (phoneLocal ? `+${phoneLocal}` : null);
+              const firstName = cust.firstName?.trim();
+              const lastName = cust.lastName?.trim();
+              const fullName = [firstName, lastName].filter(Boolean).join(" ");
+              
+              resolvedDisplayName = fullName || null;
               resolvedIdentifier = cust.email || cust.phone || null;
             }
           }
@@ -295,7 +298,10 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
             where: { campaignId_shopifyCustomerId: { campaignId: campaign.id, shopifyCustomerId: customerId } },
             select: { displayName: true },
           });
-          resolvedDisplayName = existingProgress?.displayName || null;
+          
+          const dbName = existingProgress?.displayName || null;
+          // Do not expose raw email/phone as display name
+          resolvedDisplayName = (dbName && !dbName.includes("@") && !/^\\+?\\d{10,}$/.test(dbName)) ? dbName : null;
         }
       }
     } catch {
@@ -1650,7 +1656,7 @@ export default function CustomerCampaignPage() {
             <div className="user-greeting-pill">
               <span>
                 {isAuthenticated
-                  ? `Welcome, ${initialData.customerIdentifier || initialData.progress.displayName || "Player"}`
+                  ? `Welcome, ${initialData.progress.displayName || "Player"}`
                   : "Welcome, Festive Guest"}
               </span>
               <span style={{ fontSize: "10px", color: "#fbbf24" }}>▾</span>
@@ -1762,6 +1768,9 @@ export default function CustomerCampaignPage() {
                 <div className="hud-progress-bar-fill" style={{ width: `${percentage}%` }} />
               </div>
               <div className="hud-progress-percent">{percentage}%</div>
+              <div style={{ fontSize: "11px", color: "#cbd5e1", marginTop: "8px", textAlign: "center", lineHeight: 1.3 }}>
+                Complete 1,000 points to become eligible<br />for the ₹1,500–₹2,000 gift.
+              </div>
             </div>
 
             {/* Right: Reward */}
@@ -1771,7 +1780,7 @@ export default function CustomerCampaignPage() {
                 <div className="hud-reward-copy">
                   <div className="hud-stat-label">Reward</div>
                   <div className="hud-stat-val" style={{ color: "#fbbf24", fontSize: "14px" }}>
-                    {reward?.discountCode ? <><span className="hud-reward-code-label">Code: </span>{reward.discountCode}</> : "₹10,000+ in Prizes"}
+                    {reward?.discountCode ? <><span className="hud-reward-code-label">Code: </span>{reward.discountCode}</> : "₹1,500–₹2,000 Gift"}
                   </div>
                 </div>
                 {reward?.discountCode && <button
@@ -2195,6 +2204,72 @@ export default function CustomerCampaignPage() {
     }
 
     // ACTIVE / AVAILABLE CARD (Cream / Festive Gold)
+    if (lvl.levelNumber === 10) {
+      return (
+        <div
+          key={lvl.id}
+          className="game-card-active final-level-card"
+          onClick={() => handleOpenLevel(lvl)}
+          id={`level-card-day-${lvl.levelNumber}`}
+        >
+          <div className="active-card-top-bar final-card-top-bar">
+            <span className="day-badge-orange final-day-badge">✦ LEVEL 10 ✦</span>
+            {isCompleted ? (
+              <div className="check-circle-green">✓</div>
+            ) : isPending ? (
+              <span style={{ fontSize: "11px", fontWeight: 700, color: "#d97706" }}>⏳ Reviewing</span>
+            ) : isRejected ? (
+              <span style={{ fontSize: "11px", fontWeight: 700, color: "#dc2626" }}>Submission closed</span>
+            ) : (
+              <span style={{ fontSize: "11px", fontWeight: 700, color: "#fef08a" }}>FINAL CHALLENGE</span>
+            )}
+          </div>
+
+          <div className="final-level-ornament">
+             <KalashArtwork />
+          </div>
+
+          <div className="active-card-body">
+            <h3 className="active-card-title final-card-title">{lvl.title}</h3>
+            <p className="active-card-desc final-card-desc">
+              {lvl.description || `Complete the final challenge and reach the reward milestone.`}
+            </p>
+          </div>
+
+          <div>
+            {isCompleted ? (
+              <button type="button" className="active-card-btn completed" disabled>
+                Feedback submitted ✓
+              </button>
+            ) : isPending ? (
+              <button type="button" className="active-card-btn" disabled style={{ background: "#fef3c7", color: "#92400e", borderColor: "#fde68a", cursor: "not-allowed" }}>
+                Under Review ⏳
+              </button>
+            ) : isRejected ? (
+              <button type="button" className="active-card-btn" onClick={(event) => { event.stopPropagation(); handleOpenLevel(lvl); }} style={{ background: "#fff7ed", color: "#9a3412", borderColor: "#fdba74" }}>
+                Update &amp; Resubmit
+              </button>
+            ) : (
+              <button
+                type="button"
+                id={`start-level-${lvl.levelNumber}-btn`}
+                className="active-card-btn final-card-btn"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleOpenLevel(lvl);
+                }}
+              >
+                Start Final Challenge ➔
+              </button>
+            )}
+          </div>
+
+          <ActiveCardSideDecor />
+          <CardCornerDecor />
+        </div>
+      );
+    }
+
     return (
       <div
         key={lvl.id}

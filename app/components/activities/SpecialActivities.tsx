@@ -203,15 +203,34 @@ export function SpecialActivity({
     return (
       <div className="memory-game" style={{ padding: 12, textAlign: "center" }}>
         <p className="memory-game-status">Find every matching pair · {secondsLeft}s · {attempts}/{maxAttempts} attempts</p>
-        <div className="memory-game-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(48px, 1fr))", gap: 8, maxWidth: 420, margin: "0 auto 18px" }}>
+        <div className="memory-game-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(48px, 1fr))", gap: 12, maxWidth: 420, margin: "0 auto 18px" }}>
           {cards.map((face, index) => {
             const revealed = open.includes(index) || matched.includes(index);
+            const isMatched = matched.includes(index);
             const imageFace = face.startsWith("https://") || face.startsWith("http://") || face.startsWith("/");
-            return <button className={`memory-game-card${revealed ? " is-revealed" : ""}`} key={index} type="button" aria-label={revealed ? (imageFace ? `Card ${index + 1}` : face) : "Hidden card"} disabled={revealed || lost || isSubmitting} onClick={() => {
-              if (open.length >= 2) return;
-              if (open.length === 1) setAttempts((value) => value + 1);
-              setOpen((value) => [...value, index]);
-            }} style={{ minHeight: 62 }}>{revealed ? (imageFace ? <img src={face} alt="Navratri memory card" style={{ maxWidth: "100%", maxHeight: 54, objectFit: "contain" }} /> : face) : "?"}</button>;
+            return (
+              <button 
+                className={`memory-game-card ${revealed ? "is-revealed" : ""} ${isMatched ? "is-matched" : ""}`} 
+                key={index} 
+                type="button" 
+                aria-label={revealed ? (imageFace ? `Card ${index + 1}` : face) : "Hidden card"} 
+                disabled={revealed || lost || isSubmitting} 
+                onClick={() => {
+                  if (open.length >= 2) return;
+                  if (open.length === 1) setAttempts((value) => value + 1);
+                  setOpen((value) => [...value, index]);
+                }} 
+              >
+                <div className="memory-card-inner">
+                  <div className="memory-card-hidden">
+                    <div className="memory-card-hidden-pattern">✦ 🪔 ✦</div>
+                  </div>
+                  <div className="memory-card-revealed">
+                    {imageFace ? <img src={face} alt="Navratri memory card" style={{ maxWidth: "100%", maxHeight: 54, objectFit: "contain" }} /> : face}
+                  </div>
+                </div>
+              </button>
+            );
           })}
         </div>
         {lost && <button type="button" style={buttonStyle} onClick={() => { memoryCompletionSent.current = false; setAttempts(0); setMatched([]); setGameComplete(false); setOpen([]); setSecondsLeft(Number(config.timerSeconds) || 90); setCards([...cardFaces, ...cardFaces].sort(() => Math.random() - 0.5)); }}>Try Again</button>}
@@ -253,7 +272,7 @@ export function SpecialActivity({
         ) : <p style={{ color: "#b91c1c" }}>The campaign team has not added an audio clip yet.</p>}
         {!(activityType === "movie_guess" && movieOptions.length > 0) && <label style={{ display: "grid", gap: 6, color: "#334155", fontWeight: 700 }}>
           {activityType === "movie_guess" ? "Your movie guess" : String(config.prompt || "Your tune guess")}
-          <input value={answer} onChange={(event) => setAnswer(event.target.value)} required style={{ padding: 10, border: "1px solid #cbd5e1", borderRadius: 8, width: "100%", boxSizing: "border-box" }} />
+          <input value={answer} onChange={(event) => setAnswer(event.target.value)} required style={{ padding: 10, border: "1px solid #cbd5e1", borderRadius: 8, width: "100%", boxSizing: "border-box", background: "rgba(255, 255, 255, 0.95)", color: "#1e293b" }} />
         </label>}
         <button type="submit" style={buttonStyle} disabled={activityType === "audio_guess" ? false : isSubmitting || (activityType === "movie_guess" && movieGuessesLeft <= 0)} aria-busy={isSubmitting}>
           {isSubmitting ? "Checking answer…" : activityType === "movie_guess" ? movieGuessesLeft <= 0 ? "No guesses remaining" : "Submit Movie Guess" : "Submit Answer"}
