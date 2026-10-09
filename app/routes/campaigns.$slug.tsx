@@ -5,7 +5,7 @@ import prisma from "../db.server";
 import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction, LinksFunction, ShouldRevalidateFunctionArgs, HeadersFunction } from "react-router";
 import { useActionData, useFetcher, useLoaderData, useNavigation, useSubmit, useRouteError, Form } from "react-router";
 import { AppProxyProvider } from "@shopify/shopify-app-react-router/react";
-import { getCampaignBySlug, getCampaignTimeStatus } from "../services/campaign.server";
+import { getActiveCampaign, getCampaignTimeStatus } from "../services/campaign.server";
 import { aggregateQuizTransactions, getCustomerLevelProgress, getCustomerPointHistory } from "../services/customer.server";
 import {
   processQuizSubmission,
@@ -282,8 +282,8 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
     customerId = url.searchParams.get("customerId") || null;
   }
 
-  // Resolve campaign scoped to this shop for multi-store isolation
-  const campaign = await getCampaignBySlug(slug, shopDomain);
+  // Always fetch the currently active campaign for this shop, ignoring the hardcoded slug from the theme embed
+  const campaign = await getActiveCampaign(shopDomain);
   if (!campaign) {
     throw new Response("Campaign not found", { status: 404 });
   }
@@ -656,7 +656,7 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
   authenticatedCustomerId ||= getSignedLiquidCustomerId(formIdentity);
   shopDomain ||= String(formData.get("shop") || "") || undefined;
 
-  const campaign = await getCampaignBySlug(slug || "", shopDomain);
+  const campaign = await getActiveCampaign(shopDomain);
   if (!campaign) return { success: false, error: "Campaign not found" };
 
   const timeStatus = getCampaignTimeStatus(campaign);

@@ -1,10 +1,10 @@
 import type { LoaderFunctionArgs } from "react-router";
 import prisma from "../db.server";
-import { getCampaignBySlug } from "../services/campaign.server";
+import { getActiveCampaign } from "../services/campaign.server";
 
 export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   const url = new URL(request.url);
-  const campaign = await getCampaignBySlug(params.slug || "", url.searchParams.get("shop") || undefined);
+  const campaign = await getActiveCampaign(url.searchParams.get("shop") || undefined);
   if (!campaign) return new Response("Audio challenge not found.", { status: 404 });
 
   const levelId = url.searchParams.get("levelId") || "";
