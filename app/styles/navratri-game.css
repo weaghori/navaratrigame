@@ -2044,7 +2044,7 @@ body {
   overscroll-behavior: none;
 }
 
-.festive-modal-card {
+.festive-challenge-dialog {
   --popup-image: url("./b2.webp");
   --popup-title: #ffe18a;
   --popup-text: #fff8e8;
@@ -2130,11 +2130,11 @@ body {
   }
 }
 
-.festive-modal-card::-webkit-scrollbar {
+.festive-challenge-dialog::-webkit-scrollbar {
   display: none;
 }
 
-.festive-modal-card::before {
+.festive-challenge-dialog::before {
   position: absolute;
   z-index: -1;
   content: "";
