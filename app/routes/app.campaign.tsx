@@ -223,9 +223,9 @@ export default function CampaignPage() {
             <div style={{ fontSize: "13px", color: "#6d7175", marginTop: "4px" }}>Initialize a default campaign for your store to get started.</div>
             <Form method="post" style={{ marginTop: "16px" }}>
               <input type="hidden" name="intent" value="initialize" />
-              <s-button type="submit" variant="primary" disabled={isSaving}>
+              <button type="submit" disabled={isSaving} style={{ background: "#000", color: "#fff", padding: "10px 20px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }}>
                 {isSaving ? "Initializing..." : "Initialize Campaign"}
-              </s-button>
+              </button>
             </Form>
           </div>
         </s-section>
@@ -590,9 +590,9 @@ export default function CampaignPage() {
               padding: "16px 0",
             }}
           >
-            <s-button type="submit" variant="primary" disabled={isSaving}>
+            <button type="submit" disabled={isSaving} style={{ background: "#000", color: "#fff", padding: "10px 20px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }}>
               {isSaving ? "Saving Settings..." : "Save Campaign Settings"}
-            </s-button>
+            </button>
           </div>
         </div>
       </Form>

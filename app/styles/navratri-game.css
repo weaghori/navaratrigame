@@ -3364,3 +3364,52 @@ body {
   --popup-button-bg: linear-gradient(110deg, #c2410c, #ea580c);
   --popup-button-text: #ffffff;
 }
+/* FINAL OVERRIDES FOR BACKGROUNDS AND CONTRAST V2 */
+.festive-modal-card {
+  background: transparent !important;
+  border: none !important;
+}
+.festive-modal-card::before {
+  background-image: var(--popup-image);
+}
+
+.festive-modal-card--day-1 h3, .festive-modal-card--day-1 p, .festive-modal-card--day-1 label, .festive-modal-card--day-1 .challenge-intro, .festive-modal-card--day-1 li, .festive-modal-card--day-1 .challenge-requirement { color: #ffffff !important; text-shadow: 0 1px 3px rgba(0,0,0,0.6); }
+.festive-modal-card--day-2 h3, .festive-modal-card--day-2 p, .festive-modal-card--day-2 label, .festive-modal-card--day-2 .challenge-intro, .festive-modal-card--day-2 li, .festive-modal-card--day-2 .challenge-requirement { color: #ffffff !important; text-shadow: 0 1px 3px rgba(0,0,0,0.6); }
+.festive-modal-card--day-3 h3, .festive-modal-card--day-3 p, .festive-modal-card--day-3 label, .festive-modal-card--day-3 .challenge-intro, .festive-modal-card--day-3 li, .festive-modal-card--day-3 .challenge-requirement { color: #ffffff !important; text-shadow: 0 1px 3px rgba(0,0,0,0.6); }
+.festive-modal-card--day-4 h3, .festive-modal-card--day-4 p, .festive-modal-card--day-4 label, .festive-modal-card--day-4 .challenge-intro, .festive-modal-card--day-4 li, .festive-modal-card--day-4 .challenge-requirement { color: #ffffff !important; text-shadow: 0 1px 3px rgba(0,0,0,0.6); }
+.festive-modal-card--day-5 h3, .festive-modal-card--day-5 p, .festive-modal-card--day-5 label, .festive-modal-card--day-5 .challenge-intro, .festive-modal-card--day-5 li, .festive-modal-card--day-5 .challenge-requirement { color: #ffffff !important; text-shadow: 0 1px 3px rgba(0,0,0,0.6); }
+.festive-modal-card--day-6 h3, .festive-modal-card--day-6 p, .festive-modal-card--day-6 label, .festive-modal-card--day-6 .challenge-intro, .festive-modal-card--day-6 li, .festive-modal-card--day-6 .challenge-requirement { color: #ffffff !important; text-shadow: 0 1px 3px rgba(0,0,0,0.6); }
+.festive-modal-card--day-7 h3, .festive-modal-card--day-7 p, .festive-modal-card--day-7 label, .festive-modal-card--day-7 .challenge-intro, .festive-modal-card--day-7 li, .festive-modal-card--day-7 .challenge-requirement { color: #ffffff !important; text-shadow: 0 1px 3px rgba(0,0,0,0.6); }
+.festive-modal-card--day-8 h3, .festive-modal-card--day-8 p, .festive-modal-card--day-8 label, .festive-modal-card--day-8 .challenge-intro, .festive-modal-card--day-8 li, .festive-modal-card--day-8 .challenge-requirement { color: #000000 !important; text-shadow: 0 1px 3px rgba(255,255,255,0.6); }
+
+/* Day 9 (Peach) - Make text properly visible (high contrast bright colors) */
+.festive-modal-card--day-9 {
+  --popup-image: url("./peach.webp");
+  --popup-title: #ffffff;
+  --popup-text: #ffffff;
+  --popup-muted: #fffbeb;
+  --popup-panel-bg: rgba(67, 20, 7, 0.7);
+  --popup-dropzone-bg: rgba(67, 20, 7, 0.8);
+  --popup-button-bg: linear-gradient(110deg, #f97316, #fb923c);
+  --popup-button-text: #ffffff;
+}
+.festive-modal-card--day-9 h3, .festive-modal-card--day-9 p, .festive-modal-card--day-9 label, .festive-modal-card--day-9 .challenge-intro, .festive-modal-card--day-9 li, .festive-modal-card--day-9 .challenge-requirement {
+  color: #ffffff !important;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+}
+
+/* Level 10 - Use Purple Color */
+.festive-modal-card--day-10 {
+  --popup-image: url("./purple.webp");
+  --popup-title: #ffffff;
+  --popup-text: #ffffff;
+  --popup-muted: #f3e8ff;
+  --popup-panel-bg: rgba(59, 7, 100, 0.7);
+  --popup-dropzone-bg: rgba(59, 7, 100, 0.8);
+  --popup-button-bg: linear-gradient(110deg, #9333ea, #a855f7);
+  --popup-button-text: #ffffff;
+}
+.festive-modal-card--day-10 h3, .festive-modal-card--day-10 p, .festive-modal-card--day-10 label, .festive-modal-card--day-10 .challenge-intro, .festive-modal-card--day-10 li, .festive-modal-card--day-10 .challenge-requirement {
+  color: #ffffff !important;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+}
