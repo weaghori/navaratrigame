@@ -56,6 +56,7 @@ function readToken(token: unknown): UploadToken | null {
 }
 
 async function getProxyIdentity(request: Request): Promise<{ customerId: string; shop: string }> {
+  console.log("getProxyIdentity request.url:", request.url);
   const { session } = await authenticate.public.appProxy(request);
   const url = new URL(request.url);
   const customerId = url.searchParams.get("logged_in_customer_id")?.trim();

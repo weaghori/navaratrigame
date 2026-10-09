@@ -1199,7 +1199,7 @@ export default function CustomerCampaignPage() {
     setIsSpinSubmitting(true);
     setSpinError(null);
     try {
-      const endpoint = `${proxyBasePath}/api/campaigns/${encodeURIComponent(campaign.slug)}/spin`;
+      const endpoint = `${proxyBasePath}/api/campaigns/${encodeURIComponent(campaign.slug)}/spin${typeof window !== "undefined" ? window.location.search : ""}`;
       const response = await fetch(endpoint, {
         method: "POST",
         body: form,
@@ -1406,7 +1406,7 @@ export default function CustomerCampaignPage() {
     submissionType: "photo_upload" | "final_submission",
     textResponse?: string,
   ) => {
-    const endpoint = `${proxyBasePath}/api/campaigns/${encodeURIComponent(campaign.slug)}/upload`;
+    const endpoint = `${proxyBasePath}/api/campaigns/${encodeURIComponent(campaign.slug)}/upload${typeof window !== "undefined" ? window.location.search : ""}`;
     const authorizeResponse = await fetch(endpoint, {
       method: "POST",
       credentials: "same-origin",
@@ -1523,7 +1523,7 @@ export default function CustomerCampaignPage() {
       if (activityType === "movie_guess" || activityType === "audio_guess") setMovieGuessFeedback(null);
       setSpecialActivityError(null);
       setIsSpecialActivitySubmitting(true);
-      const endpoint = `${proxyBasePath}/api/campaigns/${encodeURIComponent(campaign.slug)}/activity`;
+      const endpoint = `${proxyBasePath}/api/campaigns/${encodeURIComponent(campaign.slug)}/activity${typeof window !== "undefined" ? window.location.search : ""}`;
       void fetch(endpoint, {
         method: "POST",
         body: form,
