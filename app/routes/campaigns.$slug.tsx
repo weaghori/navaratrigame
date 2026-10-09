@@ -664,7 +664,7 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
     return { success: false, error: `This campaign is currently ${timeStatus.toLowerCase()}. Submissions are not permitted.` };
   }
 
-  if (contentType.includes("multipart/form-data")) {
+  if (contentType.includes("multipart/form-data") || contentType.includes("application/x-www-form-urlencoded")) {
     const levelId = String(formData.get("levelId") || "");
     const formCustomerId = String(formData.get("customerId") || "");
     
@@ -1200,9 +1200,11 @@ export default function CustomerCampaignPage() {
     setSpinError(null);
     try {
       const endpoint = `${proxyBasePath}/api/campaigns/${encodeURIComponent(campaign.slug)}/spin${typeof window !== "undefined" ? window.location.search : ""}`;
+      const urlParams = new URLSearchParams();
+      for (const [key, value] of form.entries()) urlParams.append(key, value as string);
       const response = await fetch(endpoint, {
         method: "POST",
-        body: form,
+        body: urlParams,
         credentials: "same-origin",
         headers: { Accept: "application/json" },
       });
@@ -1319,10 +1321,12 @@ export default function CustomerCampaignPage() {
   };
 
   const submitCampaignForm = async (form: FormData) => {
-    const endpoint = `${proxyBasePath}/api/campaigns/${encodeURIComponent(campaign.slug)}/submit`;
+    const endpoint = `${proxyBasePath}/api/campaigns/${encodeURIComponent(campaign.slug)}/submit${typeof window !== "undefined" ? window.location.search : ""}`;
+    const urlParams = new URLSearchParams();
+    for (const [key, value] of form.entries()) urlParams.append(key, value as string);
     const response = await fetch(endpoint, {
       method: "POST",
-      body: form,
+      body: urlParams,
       credentials: "same-origin",
       headers: { Accept: "application/json" },
     });
@@ -1507,7 +1511,30 @@ export default function CustomerCampaignPage() {
     form.append("activityType", "final_submission");
     form.append("textResponse", data.text);
     addCustomerBridge(form);
-    submit(form, { method: "post", encType: "multipart/form-data" });
+    submitCampaignForm(form).then(result => {
+      if (result.outcome === "pending_review") {
+        setLevels((current) => current.map((level) => level.id === activeLevelModal.id ? { ...level, state: "PENDING" as const } : level));
+        setActiveLevelModal(null);
+        setSubmissionFeedback({ outcome: "pending_review", message: result.message || "Your response was submitted for review." });
+        void fetchLiveUpdates();
+      } else if (result.outcome === "points_awarded" || result.outcome === "feedback_submitted") {
+        if (result.progressSummary) setProgress((current) => ({ ...current, ...result.progressSummary }));
+        if (result.completedLevelId || result.completedLevelNumber) {
+          setLevels((current) => current.map((level) => level.id === result.completedLevelId || level.levelNumber === result.completedLevelNumber ? { ...level, state: "COMPLETED" as const } : level));
+        }
+        setActiveLevelModal(null);
+        setSubmissionFeedback({
+          outcome: result.outcome,
+          pointsAwarded: result.pointsAwarded,
+          message: result.message || "Your response was submitted successfully.",
+        });
+        void fetchLiveUpdates();
+      } else {
+        setPhotoUploadError(result.message || "Your response could not be submitted.");
+      }
+    }).catch(error => {
+      setPhotoUploadError(error instanceof Error ? error.message : "Submission failed. Please try again.");
+    });
   };
 
   const handleSpecialActivity = useCallback((activityType: string, values: Record<string, string> = {}) => {
@@ -1524,9 +1551,11 @@ export default function CustomerCampaignPage() {
       setSpecialActivityError(null);
       setIsSpecialActivitySubmitting(true);
       const endpoint = `${proxyBasePath}/api/campaigns/${encodeURIComponent(campaign.slug)}/activity${typeof window !== "undefined" ? window.location.search : ""}`;
+      const urlParams = new URLSearchParams();
+      for (const [key, value] of form.entries()) urlParams.append(key, value as string);
       void fetch(endpoint, {
         method: "POST",
-        body: form,
+        body: urlParams,
         credentials: "same-origin",
         headers: { Accept: "application/json" },
       }).then(async (response) => {

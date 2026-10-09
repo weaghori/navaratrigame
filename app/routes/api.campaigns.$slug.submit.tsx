@@ -175,7 +175,7 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
       return json({ success: false, error: "Unsupported activity type for JSON payload" }, 400);
     }
 
-    if (contentType.includes("multipart/form-data")) {
+    if (contentType.includes("multipart/form-data") || contentType.includes("application/x-www-form-urlencoded")) {
       const formData = await guardedRequest.formData();
       const formIdentity = new URLSearchParams({
         customer_id_from_liquid: String(formData.get("customer_id_from_liquid") || ""),
