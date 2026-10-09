@@ -2686,14 +2686,14 @@ body {
 
 .memory-game-card:not(:disabled):hover {
   transform: translateY(-2px);
-  background: rgba(255, 247, 224, 0.27) !important;
-  box-shadow: 0 8px 18px rgba(20, 12, 5, 0.32), inset 0 1px rgba(255, 255, 255, 0.24);
+  background: transparent !important;
+  box-shadow: none !important;
 }
 
 .memory-game-card.is-revealed {
-  background: rgba(255, 247, 224, 0.96) !important;
+  background: transparent !important;
   color: #412b13 !important;
-  border-color: #fff0bd !important;
+  border: none !important;
 }
 
 .spin-wheel-button {
@@ -3206,14 +3206,17 @@ body {
    MEMORY GAME REDESIGN (MATCH CARD GAME)
    ========================================================================== */
 .memory-game-card {
-  background: transparent;
+  background: transparent !important;
   perspective: 1000px;
-  border: none;
-  padding: 0;
+  border: none !important;
+  padding: 0 !important;
   margin: 0;
   width: 100%;
   aspect-ratio: 1 / 1.2;
   cursor: pointer;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
 .memory-card-inner {
@@ -3240,15 +3243,15 @@ body {
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
   border-radius: 12px;
+  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
 .memory-card-hidden {
-  background: linear-gradient(135deg, #1d4ed8 0%, #1e3a8a 100%);
-  border: 2px solid #fbbf24;
+  background: transparent;
+  border: none;
   color: #fbbf24;
 }
 
@@ -3262,8 +3265,8 @@ body {
 }
 
 .memory-card-revealed {
-  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
-  border: 2px solid #d97706;
+  background: rgba(255, 251, 235, 0.9);
+  border: none;
   color: #92400e;
   transform: rotateY(180deg);
   font-size: 28px;
@@ -3271,7 +3274,6 @@ body {
 
 .memory-game-card.is-matched .memory-card-revealed {
   box-shadow: 0 0 15px rgba(251, 191, 36, 0.8), inset 0 0 10px rgba(251, 191, 36, 0.3);
-  border-color: #fbbf24;
 }
 /* OVERRIDES FOR POPUP BACKGROUNDS AND TEXT COLORS */
 .festive-modal-card--day-1 {

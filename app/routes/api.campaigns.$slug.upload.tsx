@@ -65,7 +65,7 @@ async function getProxyIdentity(request: Request): Promise<{ customerId: string;
   return { customerId, shop };
 }
 
-export async function action({ params, request }: ActionFunctionArgs) {
+export async function loader({ request }: ActionFunctionArgs) {
   const requestOrigin = request.headers.get("Origin") || "";
   const secureStorefrontOrigin = /^https:\/\/[a-z0-9.-]+(?::443)?$/i.test(requestOrigin);
   const corsHeaders = secureStorefrontOrigin ? {
@@ -83,6 +83,20 @@ export async function action({ params, request }: ActionFunctionArgs) {
     }
     return new Response(null, { status: 204, headers: corsHeaders });
   }
+  return Response.json({ success: false, error: "Method not allowed." }, { status: 405, headers: { Allow: "POST" } });
+}
+
+export async function action({ params, request }: ActionFunctionArgs) {
+  const requestOrigin = request.headers.get("Origin") || "";
+  const secureStorefrontOrigin = /^https:\/\/[a-z0-9.-]+(?::443)?$/i.test(requestOrigin);
+  const corsHeaders = secureStorefrontOrigin ? {
+    "Access-Control-Allow-Origin": requestOrigin,
+    "Access-Control-Allow-Credentials": "true",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Accept, Content-Type",
+    "Access-Control-Max-Age": "600",
+    Vary: "Origin",
+  } : undefined;
 
   const json = (body: any, init?: ResponseInit | number) => {
     const initObj = typeof init === "number" ? { status: init } : init;
@@ -208,9 +222,7 @@ export async function action({ params, request }: ActionFunctionArgs) {
   }
 }
 
-export async function loader() {
-  return Response.json({ success: false, error: "Method not allowed." }, { status: 405, headers: { Allow: "POST" } });
-}
+
 
 
 

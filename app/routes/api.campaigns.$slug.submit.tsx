@@ -21,12 +21,8 @@ function getSignedLiquidCustomerId(url: URL | URLSearchParams) {
   return actual.length === expected.length && timingSafeEqual(actual, expected) ? customerId : null;
 }
 
-export const action = async ({ params, request }: ActionFunctionArgs) => {
-  const { slug } = params;
-  const url = new URL(request.url);
+export const loader = async ({ request }: ActionFunctionArgs) => {
   const requestOrigin = request.headers.get("Origin") || "";
-  // Storefronts can use either their *.myshopify.com hostname or a custom
-  // domain. The upload POST still requires the signed customer identity below.
   const secureStorefrontOrigin = /^https:\/\/[a-z0-9.-]+(?::443)?$/i.test(requestOrigin);
   const corsHeaders = secureStorefrontOrigin ? {
     "Access-Control-Allow-Origin": requestOrigin,
@@ -36,7 +32,6 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
     "Access-Control-Max-Age": "600",
     Vary: "Origin",
   } : undefined;
-  const json = (body: unknown, status = 200) => Response.json(body, { status, headers: corsHeaders });
 
   if (request.method === "OPTIONS") {
     if (!secureStorefrontOrigin || !corsHeaders) {
@@ -44,6 +39,24 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
     }
     return new Response(null, { status: 204, headers: corsHeaders });
   }
+  return new Response("Method not allowed", { status: 405 });
+};
+
+export const action = async ({ params, request }: ActionFunctionArgs) => {
+  const { slug } = params;
+  const url = new URL(request.url);
+  const requestOrigin = request.headers.get("Origin") || "";
+  const secureStorefrontOrigin = /^https:\/\/[a-z0-9.-]+(?::443)?$/i.test(requestOrigin);
+  const corsHeaders = secureStorefrontOrigin ? {
+    "Access-Control-Allow-Origin": requestOrigin,
+    "Access-Control-Allow-Credentials": "true",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Accept, Content-Type",
+    "Access-Control-Max-Age": "600",
+    Vary: "Origin",
+  } : undefined;
+
+  const json = (body: unknown, status = 200) => Response.json(body, { status, headers: corsHeaders });
 
   if (request.method !== "POST") {
     return json({ success: false, error: "Method not allowed" }, 405);

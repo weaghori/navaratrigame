@@ -225,7 +225,7 @@ export function SpecialActivity({
                     <img src={cardImage} alt="Card Back" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "inherit" }} />
                   </div>
                   <div className="memory-card-revealed">
-                    {imageFace ? <img src={face} alt="Navratri memory card" style={{ maxWidth: "100%", maxHeight: 54, objectFit: "contain" }} /> : face}
+                    {imageFace ? <img src={face} alt="Navratri memory card" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : face}
                   </div>
                 </div>
               </button>

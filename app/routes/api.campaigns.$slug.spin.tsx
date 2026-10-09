@@ -21,7 +21,7 @@ function getSignedCustomerId(url: URL | URLSearchParams) {
     : null;
 }
 
-export const action = async ({ params, request }: ActionFunctionArgs) => {
+export const loader = async ({ request }: ActionFunctionArgs) => {
   const requestOrigin = request.headers.get("Origin") || "";
   const secureStorefrontOrigin = /^https:\/\/[a-z0-9.-]+(?::443)?$/i.test(requestOrigin);
   const corsHeaders = secureStorefrontOrigin ? {
@@ -39,6 +39,20 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
     }
     return new Response(null, { status: 204, headers: corsHeaders });
   }
+  return new Response("Method not allowed", { status: 405 });
+};
+
+export const action = async ({ params, request }: ActionFunctionArgs) => {
+  const requestOrigin = request.headers.get("Origin") || "";
+  const secureStorefrontOrigin = /^https:\/\/[a-z0-9.-]+(?::443)?$/i.test(requestOrigin);
+  const corsHeaders = secureStorefrontOrigin ? {
+    "Access-Control-Allow-Origin": requestOrigin,
+    "Access-Control-Allow-Credentials": "true",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Accept, Content-Type",
+    "Access-Control-Max-Age": "600",
+    Vary: "Origin",
+  } : undefined;
 
   const json = (body: Record<string, unknown>, status = 200) =>
     Response.json(body, { status, headers: { "Cache-Control": "no-store", ...corsHeaders } });

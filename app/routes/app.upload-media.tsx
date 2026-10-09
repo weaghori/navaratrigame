@@ -7,7 +7,7 @@ import { uploadMedia } from "../services/storage.server";
 import { limitRequestBody } from "../utils/request-body-limit.server";
 
 const IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
-const AUDIO_TYPES = new Set(["audio/mpeg", "audio/mp4", "audio/aac", "audio/ogg", "audio/wav", "audio/webm", "audio/x-m4a"]);
+const AUDIO_TYPES = new Set(["audio/mpeg", "audio/mp3", "audio/mp4", "audio/aac", "audio/ogg", "audio/wav", "audio/webm", "audio/x-m4a"]);
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 const MAX_AUDIO_BYTES = 25 * 1024 * 1024;
 
@@ -84,9 +84,9 @@ export async function action({ request }: ActionFunctionArgs) {
     if (!Number.isSafeInteger(size) || size < 1 || size > (kind === "image" ? MAX_IMAGE_BYTES : MAX_AUDIO_BYTES)) {
       return Response.json({ error: kind === "image" ? "Product images must be 10MB or smaller." : "Audio files must be 25MB or smaller." }, { status: 413 });
     }
-    if ((kind === "image" && level.activityType !== "text_submission") || (kind === "audio" && level.activityType !== "audio_guess")) {
-      return Response.json({ error: "This media type is not valid for the selected level." }, { status: 400 });
-    }
+    // We no longer strictly enforce `level.activityType` here because an admin might
+    // be changing a level from 'quiz' to 'audio_guess' and uploading the file before saving.
+    // If we enforce it, they can't upload the file until they save, but they want to preview it first.
     const key = `navratri/admin-staging/${randomBytes(24).toString("hex")}.upload`;
     const ticket = signTicket({ shop: session.shop, campaignId, levelId, key, contentType, size, kind, expiresAt: Date.now() + 10 * 60_000 });
     const uploadUrl = await createR2PutUrl(key, contentType, size, 300);
