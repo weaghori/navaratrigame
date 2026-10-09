@@ -20,8 +20,26 @@ function getSignedCustomerId(params: URL | URLSearchParams) {
 }
 
 export const action = async ({ params, request }: ActionFunctionArgs) => {
+  const requestOrigin = request.headers.get("Origin") || "";
+  const secureStorefrontOrigin = /^https:\/\/[a-z0-9.-]+(?::443)?$/i.test(requestOrigin);
+  const corsHeaders = secureStorefrontOrigin ? {
+    "Access-Control-Allow-Origin": requestOrigin,
+    "Access-Control-Allow-Credentials": "true",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Accept, Content-Type",
+    "Access-Control-Max-Age": "600",
+    Vary: "Origin",
+  } : undefined;
+
+  if (request.method === "OPTIONS") {
+    if (!secureStorefrontOrigin || !corsHeaders) {
+      return new Response(null, { status: 403 });
+    }
+    return new Response(null, { status: 204, headers: corsHeaders });
+  }
+
   const json = (body: Record<string, unknown>, status = 200) =>
-    Response.json(body, { status, headers: { "Cache-Control": "no-store" } });
+    Response.json(body, { status, headers: { "Cache-Control": "no-store", ...corsHeaders } });
   if (request.method !== "POST") return json({ success: false, error: "Method not allowed." }, 405);
 
   const url = new URL(request.url);

@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import crypto from "crypto";
 import prisma from "../db.server";
-import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction, LinksFunction, ShouldRevalidateFunctionArgs } from "react-router";
+import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction, LinksFunction, ShouldRevalidateFunctionArgs, HeadersFunction } from "react-router";
 import { useActionData, useFetcher, useLoaderData, useNavigation, useSubmit, useRouteError, Form } from "react-router";
 import { AppProxyProvider } from "@shopify/shopify-app-react-router/react";
 import { getCampaignBySlug, getCampaignTimeStatus } from "../services/campaign.server";
@@ -903,6 +903,12 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
 
     return { success: false, error: "Invalid action." };
   }
+};
+
+export const headers: HeadersFunction = () => {
+  return {
+    "Cache-Control": "no-cache, no-store, must-revalidate",
+  };
 };
 
 export default function CustomerCampaignPage() {
