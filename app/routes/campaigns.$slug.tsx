@@ -126,14 +126,12 @@ function sanitizeClientLevel<T extends LevelWithChallengeCopy & {
           if (mediaReference.includes("key=")) key = mediaReference.split("key=")[1];
         }
         if (key) {
-          sanitized[mediaField] = `${proxyBasePath}/api/media?key=${encodeURIComponent(key)}`;
+          const baseUrl = process.env.SHOPIFY_APP_URL || "";
+          sanitized[mediaField] = `${baseUrl}/api/media?key=${encodeURIComponent(key)}`;
         }
       } else if (mediaReference.startsWith("/api/media?")) {
-        if (!proxyBasePath || mediaReference.startsWith(proxyBasePath)) {
-          sanitized[mediaField] = mediaReference;
-        } else {
-          sanitized[mediaField] = `${proxyBasePath}${mediaReference}`;
-        }
+        const baseUrl = process.env.SHOPIFY_APP_URL || "";
+        sanitized[mediaField] = `${baseUrl}${mediaReference}`;
       }
     }
     if (l.activityType === "audio_guess" && typeof sanitized.audioUrl === "string") {
