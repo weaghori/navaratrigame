@@ -70,6 +70,83 @@ function applyLevelChallengeCopy<T extends LevelWithChallengeCopy>(level: T): T 
   return { ...level, title: template.title, description: template.description, config: nextConfig };
 }
 
+function sanitizeClientLevel<T extends LevelWithChallengeCopy & {
+  id: string;
+  levelNumber: number;
+  points: number;
+  movieGuessAttemptsUsed?: number;
+  state?: string;
+  title: string;
+  description?: string | null;
+  activityType: string;
+  config?: unknown;
+  isActive?: boolean;
+  availableFrom?: string;
+}>(
+  l: T,
+  proxyBasePath: string,
+  currentAvailableLevel: number,
+  campaignSlug: string,
+  campaignShop?: string
+): T {
+  const isLocked = l.state === "LOCKED" || (l.levelNumber > currentAvailableLevel && l.state !== "COMPLETED" && l.state !== "PENDING" && l.state !== "REJECTED");
+  const template = campaignLevelTemplate.find((item) => item.levelNumber === l.levelNumber);
+  let safeConfig: unknown = l.config;
+  if (safeConfig && typeof safeConfig === "object" && !Array.isArray(safeConfig)) {
+    const sanitized = { ...(safeConfig as Record<string, unknown>) };
+    if (l.activityType === "quiz") {
+      delete sanitized.correctOption;
+      if (Array.isArray(sanitized.questions)) {
+        sanitized.questions = sanitized.questions.map((question) => {
+          if (!question || typeof question !== "object" || Array.isArray(question)) return question;
+          const safeQuestion = { ...(question as Record<string, unknown>) };
+          delete safeQuestion.answer;
+          delete safeQuestion.correctAnswer;
+          return safeQuestion;
+        });
+      }
+    }
+    if (l.activityType === "movie_guess" || l.activityType === "audio_guess") {
+      delete sanitized.answer;
+      delete sanitized.acceptedAnswers;
+    }
+    for (const mediaField of ["audioUrl", "imageUrl", "productImageUrl"]) {
+      const mediaReference = sanitized[mediaField];
+      if (typeof mediaReference !== "string") continue;
+      if (mediaReference.startsWith("r2:")) {
+        let key: string | null = null;
+        try {
+          key = new URL(mediaReference.slice(3), "https://media.invalid").searchParams.get("key");
+        } catch {
+          if (mediaReference.includes("key=")) key = mediaReference.split("key=")[1];
+        }
+        if (key) {
+          sanitized[mediaField] = `${proxyBasePath}/api/media?key=${encodeURIComponent(key)}`;
+        }
+      } else if (mediaReference.startsWith("/api/media?")) {
+        if (!proxyBasePath || mediaReference.startsWith(proxyBasePath)) {
+          sanitized[mediaField] = mediaReference;
+        } else {
+          sanitized[mediaField] = `${proxyBasePath}${mediaReference}`;
+        }
+      }
+    }
+    if (l.activityType === "audio_guess" && typeof sanitized.audioUrl === "string") {
+      if (sanitized.audioUrl.includes("/storage/v1/object/")) {
+        sanitized.audioUrl = `${proxyBasePath}/api/campaigns/${encodeURIComponent(campaignSlug)}/audio?levelId=${encodeURIComponent(l.id)}${campaignShop ? `&shop=${encodeURIComponent(campaignShop)}` : ""}`;
+      }
+    }
+    safeConfig = sanitized;
+  }
+  return applyLevelChallengeCopy({
+    ...l,
+    title: isLocked ? "Surprise Challenge" : template?.title || l.title,
+    description: isLocked ? null : template?.description || l.description,
+    activityType: isLocked ? "locked" : l.activityType,
+    config: isLocked ? null : safeConfig,
+  });
+}
+
 function getSignedLiquidCustomerId(url: URL | URLSearchParams): string | null {
   const params = url instanceof URL ? url.searchParams : url;
   const customerId = params.get("customer_id_from_liquid")?.trim();
@@ -327,6 +404,7 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
       isDev: false,
       appUrl: process.env.SHOPIFY_APP_URL || new URL(request.url).origin,
       proxyBasePath,
+      returnPath,
       storefrontUrl,
       loginUrl,
       logoutUrl,
@@ -426,55 +504,17 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
 
   // SECURITY: Redact / mask future locked levels so their questions/titles are never leaked
   const secureLevels = levels.map((l) => {
-    const isLocked = l.state === "LOCKED" || (l.levelNumber > currentAvailableLevel && l.state !== "COMPLETED" && l.state !== "PENDING" && l.state !== "REJECTED");
-    const template = campaignLevelTemplate.find((item) => item.levelNumber === l.levelNumber);
-    let safeConfig: unknown = l.config;
-    if (safeConfig && typeof safeConfig === "object" && !Array.isArray(safeConfig)) {
-      const sanitized = { ...(safeConfig as Record<string, unknown>) };
-      if (l.activityType === "quiz") {
-        delete sanitized.correctOption;
-        if (Array.isArray(sanitized.questions)) {
-          sanitized.questions = sanitized.questions.map((question) => {
-            if (!question || typeof question !== "object" || Array.isArray(question)) return question;
-            const safeQuestion = { ...(question as Record<string, unknown>) };
-            delete safeQuestion.answer;
-            delete safeQuestion.correctAnswer;
-            return safeQuestion;
-          });
-        }
-      }
-      if (l.activityType === "movie_guess" || l.activityType === "audio_guess") {
-        delete sanitized.answer;
-        delete sanitized.acceptedAnswers;
-      }
-      for (const mediaField of ["audioUrl", "imageUrl", "productImageUrl"]) {
-        const mediaReference = sanitized[mediaField];
-        if (typeof mediaReference !== "string") continue;
-        if (mediaReference.startsWith("r2:")) {
-          const key = new URL(mediaReference.slice(3), "https://media.invalid").searchParams.get("key");
-          if (key) sanitized[mediaField] = `${proxyBasePath}/api/media?key=${encodeURIComponent(key)}`;
-        } else if (mediaReference.startsWith("/api/media?")) {
-          sanitized[mediaField] = `${proxyBasePath}${mediaReference}`;
-        }
-      }
-      if (l.activityType === "audio_guess" && typeof sanitized.audioUrl === "string") {
-        const supabaseUrl = (process.env.SUPABASE_URL || "").replace(/\/$/, "");
-        if (supabaseUrl && sanitized.audioUrl.startsWith(`${supabaseUrl}/storage/v1/object/`)) {
-          sanitized.audioUrl = `${proxyBasePath}/api/campaigns/${encodeURIComponent(campaign.slug)}/audio?levelId=${encodeURIComponent(l.id)}&shop=${encodeURIComponent(campaign.shop)}`;
-        }
-      }
-      safeConfig = sanitized;
-    }
-    return applyLevelChallengeCopy({
+    const movieGuessAttemptsUsed = movieGuessAttemptsByLevel.get(l.id) || 0;
+    const levelObj = {
       id: l.id,
       levelNumber: l.levelNumber,
       points: l.points,
-      movieGuessAttemptsUsed: movieGuessAttemptsByLevel.get(l.id) || 0,
+      movieGuessAttemptsUsed,
       state: l.state,
-      title: isLocked ? "Surprise Challenge" : template?.title || l.title,
-      description: isLocked ? null : template?.description || l.description,
-      activityType: isLocked ? "locked" : l.activityType,
-      config: isLocked ? null : safeConfig,
+      title: l.title,
+      description: l.description,
+      activityType: l.activityType,
+      config: l.config,
       isActive: l.isActive,
       availableFrom: l.availableFrom,
       submission: l.submission
@@ -489,7 +529,8 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
             createdAt: l.pointTransaction.createdAt.toISOString(),
           }
         : null,
-    });
+    };
+    return sanitizeClientLevel(levelObj, proxyBasePath, currentAvailableLevel, campaign.slug, campaign.shop);
   });
 
   return {
@@ -497,6 +538,7 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
     isDev,
     appUrl: process.env.SHOPIFY_APP_URL || new URL(request.url).origin,
     proxyBasePath,
+    returnPath,
     storefrontUrl,
     loginUrl,
     logoutUrl,
@@ -931,7 +973,7 @@ export default function CustomerCampaignPage() {
   const navigation = useNavigation();
   const submit = useSubmit();
   const activityFetcher = useFetcher<typeof action>();
-  const { proxyBasePath, storefrontUrl, isAuthenticated, loginUrl, logoutUrl, currentAvailableLevel } = initialData;
+  const { proxyBasePath, returnPath, storefrontUrl, isAuthenticated, loginUrl, logoutUrl, currentAvailableLevel } = initialData;
 
   // State synced in real-time
   const [progress, setProgress] = useState(initialData.progress);
@@ -1013,7 +1055,12 @@ export default function CustomerCampaignPage() {
       if (res.ok) {
         const data = await res.json();
         if (data.progress) setProgress(data.progress);
-        if (data.levels) setLevels(data.levels.map((level: (typeof initialData.levels)[number]) => applyLevelChallengeCopy(level)));
+        if (data.levels) {
+          const availLevel = typeof data.currentAvailableLevel === "number" ? data.currentAvailableLevel : currentAvailableLevel;
+          setLevels(data.levels.map((level: (typeof initialData.levels)[number]) =>
+            sanitizeClientLevel(level, proxyBasePath, availLevel, campaign.slug, campaign.shop)
+          ));
+        }
         if (data.reward) setReward(data.reward);
         if (data.leaderboard) setLeaderboard(data.leaderboard);
         if (data.transactions) setTransactions(data.transactions);
@@ -1241,50 +1288,17 @@ export default function CustomerCampaignPage() {
     storefrontUrl: initialData.storefrontUrl,
   });
 
-  // GoKwik / KwikPass compatible login targeting the storefront origin.
-  const triggerLogin = () => {
-    const fullLoginUrl = getLoginUrl({
-      slug: campaign.slug,
-      isDev: initialData.isDev,
-      storefrontUrl: initialData.storefrontUrl,
-    });
-
-    const a = document.createElement("a");
-    a.href = fullLoginUrl;
-    a.setAttribute("data-gokwik-login", "true");
-    a.setAttribute("data-redirect-url", window.location.pathname + window.location.search);
-    a.style.display = "none";
-    document.body.appendChild(a);
-
-    const clickEvent = new MouseEvent("click", {
-      bubbles: true,
-      cancelable: true,
-      view: window,
-    });
-
-    let defaultPrevented = false;
-    try {
-      defaultPrevented = !a.dispatchEvent(clickEvent);
-    } catch {
-      // Ignore dispatch errors
-    }
-
-    if (!defaultPrevented) {
-      if (window.top) {
-        window.top.location.href = fullLoginUrl;
-      } else {
-        window.location.href = fullLoginUrl;
-      }
-    }
-
-    setTimeout(() => { if (a.parentNode) a.parentNode.removeChild(a); }, 1000);
-  };
+  // The triggerLogin function is removed because synthetic clicks are not intercepted by KwikPass.
+  // Instead, native <a> tags are rendered.
 
   const handleOpenLevel = (lvl: (typeof levels)[0]) => {
     if (lvl.state !== "AVAILABLE" && lvl.state !== "REJECTED") return;
     if (!isAuthenticated) {
-      triggerLogin(); return;
-
+      // Native anchor navigation for unauthenticated clicks
+      if (typeof window !== "undefined") {
+        window.location.href = loginUrl;
+      }
+      return;
     }
     setActiveLevelModal(lvl);
     setSpinPrize(null);
@@ -1695,9 +1709,9 @@ export default function CustomerCampaignPage() {
             <p className="login-card-desc">
               Sign in with your store account to start Day 1, collect 1,000 points across 9 daily challenges, and unlock exclusive festive rewards!
             </p>
-            <button type="button" className="login-card-cta" onClick={triggerLogin}>
+            <a href={loginUrl} className="login-card-cta" data-gokwik-login="true" data-redirect-url={typeof window !== "undefined" ? window.location.pathname + window.location.search : returnPath} style={{ display: "inline-block", textDecoration: "none" }}>
               Login to Continue →
-            </button>
+            </a>
           </div>
         )}
 

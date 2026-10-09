@@ -71,7 +71,7 @@ export function SpecialActivity({
     if (activityType !== "memory_game") return;
     memoryCompletionSent.current = false;
     setGameComplete(false);
-        const deck = [...cardFaces, ...cardFaces].sort(() => Math.random() - 0.5);
+    const deck = [...cardFaces, ...cardFaces].sort(() => Math.random() - 0.5);
     setCards(deck);
   }, [activityType, cardFaces]);
 
@@ -125,8 +125,8 @@ export function SpecialActivity({
       onCompleteRef.current("spin_wheel", { spinAttemptToken: spinPrize.token });
     }, 3200);
     return () => window.clearTimeout(timer);
-  // Only restart the animation for a new prepared spin. Callback identity can
-  // change as the parent rerenders and must not cancel the wheel timer.
+    // Only restart the animation for a new prepared spin. Callback identity can
+    // change as the parent rerenders and must not cancel the wheel timer.
   }, [activityType, config.rewards, spinPrize?.token, spinPrize?.index]);
 
   useEffect(() => {
@@ -208,21 +208,21 @@ export function SpecialActivity({
             const isMatched = matched.includes(index);
             const imageFace = face.startsWith("https://") || face.startsWith("http://") || face.startsWith("/");
             return (
-              <button 
-                className={`memory-game-card ${revealed ? "is-revealed" : ""} ${isMatched ? "is-matched" : ""}`} 
-                key={index} 
-                type="button" 
-                aria-label={revealed ? (imageFace ? `Card ${index + 1}` : face) : "Hidden card"} 
-                disabled={revealed || lost || isSubmitting} 
+              <button
+                className={`memory-game-card ${revealed ? "is-revealed" : ""} ${isMatched ? "is-matched" : ""}`}
+                key={index}
+                type="button"
+                aria-label={revealed ? (imageFace ? `Card ${index + 1}` : face) : "Hidden card"}
+                disabled={revealed || lost || isSubmitting}
                 onClick={() => {
                   if (open.length >= 2) return;
                   if (open.length === 1) setAttempts((value) => value + 1);
                   setOpen((value) => [...value, index]);
-                }} 
+                }}
               >
                 <div className="memory-card-inner">
                   <div className="memory-card-hidden" style={{ padding: 0 }}>
-                    <img src={cardImage} alt="Card Back" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "inherit" }} />
+                    <img src={cardImage} alt="Card Back" style={{ width: "100%", height: "100%", objectFit: "contain", borderRadius: "inherit" }} />
                   </div>
                   <div className="memory-card-revealed">
                     {imageFace ? <img src={face} alt="Navratri memory card" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : face}
@@ -249,7 +249,19 @@ export function SpecialActivity({
   }
 
   if (activityType === "movie_guess" || activityType === "audio_guess") {
-    const audioUrl = String(config.audioUrl || "");
+    let rawAudioUrl = String(config.audioUrl || "");
+    let audioUrl = rawAudioUrl;
+    if (audioUrl.startsWith("r2:")) {
+      let key: string | null = null;
+      try {
+        key = new URL(audioUrl.slice(3), "https://media.invalid").searchParams.get("key");
+      } catch {
+        if (audioUrl.includes("key=")) key = audioUrl.split("key=")[1];
+      }
+      if (key) {
+        audioUrl = `/api/media?key=${encodeURIComponent(key)}`;
+      }
+    }
     const movieOptions = Array.isArray(config.options) ? config.options.map(String).filter(Boolean) : [];
     const movieGuessesLeft = Math.max(0, Math.min(3, attemptsRemaining ?? 3));
     const movieAttemptsUsed = 3 - movieGuessesLeft;

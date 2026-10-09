@@ -1,1 +1,1 @@
-export { action } from "./api.campaigns.$slug.spin";
+export { action, loader } from "./api.campaigns.$slug.spin";

@@ -1,1 +1,1 @@
-export { action } from "./api.campaigns.$slug.submit";
+export { action, loader } from "./api.campaigns.$slug.submit";
