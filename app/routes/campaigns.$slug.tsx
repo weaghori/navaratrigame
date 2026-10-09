@@ -137,6 +137,8 @@ function sanitizeClientLevel<T extends LevelWithChallengeCopy & {
     if (l.activityType === "audio_guess" && typeof sanitized.audioUrl === "string") {
       if (sanitized.audioUrl.includes("/storage/v1/object/")) {
         sanitized.audioUrl = `${proxyBasePath}/api/campaigns/${encodeURIComponent(campaignSlug)}/audio?levelId=${encodeURIComponent(l.id)}${campaignShop ? `&shop=${encodeURIComponent(campaignShop)}` : ""}`;
+      } else if (sanitized.audioUrl.startsWith("/api/media")) {
+        sanitized.audioUrl = `${proxyBasePath}${sanitized.audioUrl}`;
       }
     }
     safeConfig = sanitized;

@@ -22,17 +22,8 @@ function appMediaPath(value: string | null): string | null {
 }
 
 function thumbnailUrl(value: string): string {
-  try {
-    const url = new URL(value, "https://media.invalid");
-    const key = url.pathname === "/api/media" ? url.searchParams.get("key") : null;
-    if (key?.endsWith(".webp")) {
-      url.searchParams.set("key", key.replace(/\.webp$/i, "_thumb.webp"));
-      return `${url.pathname}${url.search}`;
-    }
-  } catch {
-    // Keep external legacy URLs unchanged.
-  }
-  return value.replace(/\.webp$/i, "_thumb.webp");
+  // Customer submissions do not have _thumb.webp generated currently
+  return value;
 }
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
