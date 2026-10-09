@@ -161,7 +161,7 @@ export default function WinnersPage() {
           </div>
 
           {!isFinalized && (
-            <button  onClick={() = style={{ background: "#000", color: "#fff", padding: "10px 20px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }}> setShowConfirmModal(true)}>
+            <button  style={{ background: "#000", color: "#fff", padding: "10px 20px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }} onClick={() => setShowConfirmModal(true)}>
               🔒 Finalize Top 25 Winners
             </button>
           )}
@@ -355,7 +355,7 @@ export default function WinnersPage() {
               <input type="hidden" name="actionType" value="finalize_winners" />
 
               <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
-                <button type="button" onClick={() = style={{ background: "#000", color: "#fff", padding: "10px 20px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }}> setShowConfirmModal(false)}>
+                <button type="button" style={{ background: "#000", color: "#fff", padding: "10px 20px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }} onClick={() => setShowConfirmModal(false)}>
                   Cancel
                 </button>
                 <button type="submit"  disabled={isSubmitting} style={{ background: "#000", color: "#fff", padding: "10px 20px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }}>
@@ -377,4 +377,5 @@ export function ErrorBoundary() {
 export const headers: HeadersFunction = (headersArgs) => {
   return boundary.headers(headersArgs);
 };
+
 

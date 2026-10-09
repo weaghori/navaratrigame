@@ -313,7 +313,7 @@ export default function RewardsPage() {
                     Total Score: <strong>{candidate.totalPoints} pts</strong> • Day {candidate.currentLevel} Completed
                   </div>
                 </div>
-                <button  onClick={() = style={{ background: "#000", color: "#fff", padding: "10px 20px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }}> setSelectedCandidate(candidate)}>
+                <button  style={{ background: "#000", color: "#fff", padding: "10px 20px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }} onClick={() => setSelectedCandidate(candidate)}>
                   Issue 10% Discount
                 </button>
               </div>
@@ -547,7 +547,7 @@ export default function RewardsPage() {
               </div>
 
               <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "20px" }}>
-                <button type="button" onClick={() = style={{ background: "#000", color: "#fff", padding: "10px 20px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }}> setSelectedCandidate(null)}>
+                <button type="button" style={{ background: "#000", color: "#fff", padding: "10px 20px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }} onClick={() => setSelectedCandidate(null)}>
                   Cancel
                 </button>
                 <button type="submit"  disabled={isSubmitting} style={{ background: "#000", color: "#fff", padding: "10px 20px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }}>
@@ -569,4 +569,5 @@ export function ErrorBoundary() {
 export const headers: HeadersFunction = (headersArgs) => {
   return boundary.headers(headersArgs);
 };
+
 

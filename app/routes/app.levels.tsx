@@ -672,11 +672,11 @@ export default function LevelsPage() {
                     <input type="hidden" name="actionType" value="toggle_active" />
                     <input type="hidden" name="campaignId" value={campaign.id} />
                     <input type="hidden" name="levelId" value={lvl.id} />
-                    <button type="submit" variant={lvl.isActive ? "tertiary" : "primary"} style={{ background: "#000", color: "#fff", padding: "10px 20px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }}>
+                    <button type="submit"  style={{ background: "#000", color: "#fff", padding: "10px 20px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }}>
                       {lvl.isActive ? "Disable" : "Enable"}
                     </button>
                   </Form>
-                  <button  onClick={() = style={{ background: "#000", color: "#fff", padding: "10px 20px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }}> openEditor(lvl)}>
+                  <button  style={{ background: "#000", color: "#fff", padding: "10px 20px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }} onClick={() => openEditor(lvl)}>
                     Edit
                   </button>
                 </div>
@@ -1063,7 +1063,7 @@ export default function LevelsPage() {
 
                 <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "12px" }}>
                   {mediaUploadMessage && <p role="status" style={{ margin: "12px 0", color: mediaUploadMessage.toLowerCase().includes("failed") || mediaUploadMessage.includes("Could not") ? "#b42318" : "#475467" }}>{mediaUploadMessage}</p>}
-                  <button type="button" onClick={() = style={{ background: "#000", color: "#fff", padding: "10px 20px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }}> setEditingLevel(null)}>
+                  <button type="button" style={{ background: "#000", color: "#fff", padding: "10px 20px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }} onClick={() => setEditingLevel(null)}>
                     Cancel
                   </button>
                   <button type="submit"  disabled={isSubmitting || uploadingMedia} style={{ background: "#000", color: "#fff", padding: "10px 20px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }}>
@@ -1086,4 +1086,6 @@ export function ErrorBoundary() {
 export const headers: HeadersFunction = (headersArgs) => {
   return boundary.headers(headersArgs);
 };
+
+
 

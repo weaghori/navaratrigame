@@ -347,7 +347,7 @@ export default function SubmissionsPage() {
                     </td>
                     <td style={{ padding: "14px 16px", textAlign: "right" }}>
                       <div style={{ display: "inline-flex", gap: "8px" }}>
-                        <button onClick={() = style={{ background: "#000", color: "#fff", padding: "10px 20px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }}> setActiveReviewSubmission(sub)}>
+                        <button style={{ background: "#000", color: "#fff", padding: "10px 20px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }} onClick={() => setActiveReviewSubmission(sub)}>
                           {isPending ? "Review" : "View"}
                         </button>
                       </div>
@@ -477,14 +477,14 @@ export default function SubmissionsPage() {
                 </div>
 
                 <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "20px" }}>
-                  <button type="button" onClick={() = style={{ background: "#000", color: "#fff", padding: "10px 20px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }}> setActiveReviewSubmission(null)}>
+                  <button type="button" style={{ background: "#000", color: "#fff", padding: "10px 20px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }} onClick={() => setActiveReviewSubmission(null)}>
                     Close
                   </button>
                   <button
                     type="submit"
                     
                     disabled={isSubmitting}
-                    onClick={() = style={{ background: "#000", color: "#fff", padding: "10px 20px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }}> { if (reviewActionInputRef.current) reviewActionInputRef.current.value = "approve"; setChosenAction("approve"); }}
+                    style={{ background: "#000", color: "#fff", padding: "10px 20px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }} onClick={() => { if (reviewActionInputRef.current) reviewActionInputRef.current.value = "approve"; setChosenAction("approve"); }}
                   >
                     {isSubmitting && chosenAction === "approve" ? "Approving..." : activeReviewSubmission.level?.levelNumber === 10 ? "✓ Save Feedback (0 Points)" : "✓ Approve & Award Points"}
                   </button>
@@ -492,7 +492,7 @@ export default function SubmissionsPage() {
                     type="submit"
                     
                     disabled={isSubmitting}
-                    onClick={() = style={{ background: "#fff", color: "#000", border: "1px solid #ccc", padding: "10px 20px", borderRadius: "6px", cursor: "pointer", fontWeight: 600 }}> { if (reviewActionInputRef.current) reviewActionInputRef.current.value = "reject"; setChosenAction("reject"); }}
+                    style={{ background: "#fff", color: "#000", border: "1px solid #ccc", padding: "10px 20px", borderRadius: "6px", cursor: "pointer", fontWeight: 600 }} onClick={() => { if (reviewActionInputRef.current) reviewActionInputRef.current.value = "reject"; setChosenAction("reject"); }}
                   >
                     {isSubmitting && chosenAction === "reject" ? "Rejecting..." : "✕ Reject"}
                   </button>
@@ -513,4 +513,5 @@ export function ErrorBoundary() {
 export const headers: HeadersFunction = (headersArgs) => {
   return boundary.headers(headersArgs);
 };
+
 
