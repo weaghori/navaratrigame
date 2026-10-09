@@ -57,22 +57,19 @@ export function TextSubmissionActivity({
             "Share your thoughts, festival memory, or festive wishes in the box below."}
         </p>}
 
-        {productImageUrl && (
+        {(productImageUrl || config.instructions?.toLowerCase().includes("product image") || config.instructions?.toLowerCase().includes("product shown")) && (
           <>
             <img
-              key={productImageUrl}
-              src={productImageUrl}
+              key={productImageUrl || "fallback"}
+              src={productImageUrl || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300' fill='%23f1f5f9'%3E%3Crect width='400' height='300' fill='%23e2e8f0'/%3E%3Ctext x='50%25' y='50%25' font-size='18' text-anchor='middle' alignment-baseline='middle' font-family='sans-serif' fill='%2364748b'%3EProduct Image%3C/text%3E%3C/svg%3E"}
               alt={config.imageAlt || config.productImageAlt || "Product for this challenge"}
               loading="eager"
               onError={(event) => {
-                event.currentTarget.hidden = true;
-                event.currentTarget.style.display = "none";
-                const fallback = event.currentTarget.nextElementSibling;
-                if (fallback instanceof HTMLElement) fallback.hidden = false;
+                event.currentTarget.onerror = null;
+                event.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300' fill='%23f1f5f9'%3E%3Crect width='400' height='300' fill='%23e2e8f0'/%3E%3Ctext x='50%25' y='50%25' font-size='18' text-anchor='middle' alignment-baseline='middle' font-family='sans-serif' fill='%2364748b'%3EProduct Image%3C/text%3E%3C/svg%3E";
               }}
               style={{ display: "block", width: "100%", maxHeight: 280, objectFit: "contain", borderRadius: 10, marginBottom: 14, background: "#fff" }}
             />
-            <p hidden role="status" style={{ margin: "-6px 0 14px", color: "#ffdf9a", fontSize: 13 }}>Product image unavailable. Set Level 7 to a direct, publicly accessible image URL, such as a Shopify CDN image ending in .jpg, .png, or .webp.</p>
           </>
         )}
 

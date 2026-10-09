@@ -3273,3 +3273,94 @@ body {
   box-shadow: 0 0 15px rgba(251, 191, 36, 0.8), inset 0 0 10px rgba(251, 191, 36, 0.3);
   border-color: #fbbf24;
 }
+/* OVERRIDES FOR POPUP BACKGROUNDS AND TEXT COLORS */
+.festive-modal-card--day-1 {
+  --popup-image: url("./blue.webp");
+  --popup-title: #ffe6a0;
+  --popup-text: #fff4f7;
+  --popup-muted: #e2e8f0;
+  --popup-panel-bg: rgba(15, 23, 42, 0.75);
+  --popup-dropzone-bg: rgba(15, 23, 42, 0.8);
+  --popup-button-bg: linear-gradient(110deg, #1e3a8a, #2563eb);
+  --popup-button-text: #ffffff;
+}
+.festive-modal-card--day-2 {
+  --popup-image: url("./orange.webp");
+  --popup-title: #ffe6a0;
+  --popup-text: #fff4f7;
+  --popup-muted: #ffedd5;
+  --popup-panel-bg: rgba(67, 20, 7, 0.75);
+  --popup-dropzone-bg: rgba(67, 20, 7, 0.8);
+  --popup-button-bg: linear-gradient(110deg, #9a3412, #ea580c);
+  --popup-button-text: #ffffff;
+}
+.festive-modal-card--day-3 {
+  --popup-image: url("./pink.webp");
+  --popup-title: #831843;
+  --popup-text: #4c0519;
+  --popup-muted: #9f1239;
+  --popup-panel-bg: rgba(255, 240, 245, 0.85);
+  --popup-dropzone-bg: rgba(255, 228, 230, 0.9);
+  --popup-button-bg: linear-gradient(110deg, #be185d, #e11d48);
+  --popup-button-text: #ffffff;
+}
+.festive-modal-card--day-4 {
+  --popup-image: url("./Brown.webp");
+  --popup-title: #fef3c7;
+  --popup-text: #fffbeb;
+  --popup-muted: #fde68a;
+  --popup-panel-bg: rgba(69, 26, 3, 0.75);
+  --popup-dropzone-bg: rgba(69, 26, 3, 0.8);
+  --popup-button-bg: linear-gradient(110deg, #b45309, #d97706);
+  --popup-button-text: #ffffff;
+}
+.festive-modal-card--day-5 {
+  --popup-image: url("./purple.webp");
+  --popup-title: #e9d5ff;
+  --popup-text: #faf5ff;
+  --popup-muted: #d8b4fe;
+  --popup-panel-bg: rgba(59, 7, 100, 0.75);
+  --popup-dropzone-bg: rgba(59, 7, 100, 0.8);
+  --popup-button-bg: linear-gradient(110deg, #7e22ce, #9333ea);
+  --popup-button-text: #ffffff;
+}
+.festive-modal-card--day-6 {
+  --popup-image: url("./red.webp");
+  --popup-title: #fee2e2;
+  --popup-text: #fef2f2;
+  --popup-muted: #fecaca;
+  --popup-panel-bg: rgba(69, 10, 10, 0.75);
+  --popup-dropzone-bg: rgba(69, 10, 10, 0.8);
+  --popup-button-bg: linear-gradient(110deg, #b91c1c, #dc2626);
+  --popup-button-text: #ffffff;
+}
+.festive-modal-card--day-7 {
+  --popup-image: url("./black.webp");
+  --popup-title: #f8fafc;
+  --popup-text: #f1f5f9;
+  --popup-muted: #cbd5e1;
+  --popup-panel-bg: rgba(2, 6, 23, 0.75);
+  --popup-dropzone-bg: rgba(2, 6, 23, 0.8);
+  --popup-button-bg: linear-gradient(110deg, #334155, #475569);
+  --popup-button-text: #ffffff;
+}
+.festive-modal-card--day-8 {
+  --popup-image: url("./white.webp");
+  --popup-title: #0f172a;
+  --popup-text: #1e293b;
+  --popup-muted: #334155;
+  --popup-panel-bg: rgba(248, 250, 252, 0.85);
+  --popup-dropzone-bg: rgba(241, 245, 249, 0.9);
+  --popup-button-bg: linear-gradient(110deg, #0f172a, #1e293b);
+  --popup-button-text: #ffffff;
+}
+.festive-modal-card--day-9 {
+  --popup-image: url("./peach.webp");
+  --popup-title: #431407;
+  --popup-text: #7c2d12;
+  --popup-muted: #9a3412;
+  --popup-panel-bg: rgba(255, 237, 213, 0.85);
+  --popup-dropzone-bg: rgba(255, 237, 213, 0.9);
+  --popup-button-bg: linear-gradient(110deg, #c2410c, #ea580c);
+  --popup-button-text: #ffffff;
+}

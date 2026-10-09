@@ -93,7 +93,7 @@ export async function getPublicLeaderboard({
 
     return {
       rank,
-      displayName: isCurrentCustomer ? "You" : maskCustomerIdentifier(p.shopifyCustomerId, rank),
+      displayName: isCurrentCustomer ? "You" : (p.displayName || maskCustomerIdentifier(p.shopifyCustomerId, rank)),
       totalPoints: p.totalPoints,
       currentLevel: p.currentLevel,
       status: p.status,

@@ -55,13 +55,13 @@ export function QuizActivity({ config, onSubmit, isSubmitting, error }: QuizActi
           <legend style={{ padding: "0 6px", color: "#fff4ce", fontSize: 15, fontWeight: 800, lineHeight: 1.4 }}>
             {question.question || `Question ${questionIndex + 1}`}
           </legend>
-          <div style={{ display: "grid", gap: 8 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
             {(question.options || []).map((option, optionIndex) => {
               const optionKey = String.fromCharCode(65 + optionIndex);
               const inputId = `quiz-${questionIndex}-${optionKey}`;
               const selected = answers[String(questionIndex)] === optionKey;
               return (
-                <label key={inputId} htmlFor={inputId} style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", boxSizing: "border-box", padding: "10px 12px", borderRadius: 9, border: `2px solid ${selected ? "#d97706" : "#e2e8f0"}`, background: selected ? "#fffbeb" : "#fff", color: "#1e293b", cursor: isSubmitting ? "not-allowed" : "pointer" }}>
+                <label key={inputId} htmlFor={inputId} style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", boxSizing: "border-box", padding: "10px 12px", borderRadius: 9, border: `2px solid ${selected ? "#fbbf24" : "rgba(255,255,255,0.3)"}`, background: selected ? "rgba(251, 191, 36, 0.15)" : "transparent", color: "#fff", cursor: isSubmitting ? "not-allowed" : "pointer", transition: "all 0.2s ease" }}>
                   <input
                     id={inputId}
                     type="radio"
@@ -71,8 +71,8 @@ export function QuizActivity({ config, onSubmit, isSubmitting, error }: QuizActi
                     disabled={isSubmitting}
                     onChange={() => setAnswers((current) => ({ ...current, [String(questionIndex)]: optionKey }))}
                   />
-                  <span style={{ fontWeight: 800, color: "#92400e" }}>{optionKey}.</span>
-                  <span>{option}</span>
+                  <span style={{ fontWeight: 900, color: selected ? "#fbbf24" : "#fef08a" }}>{optionKey}.</span>
+                  <span style={{ fontWeight: 600, color: "#fff" }}>{option}</span>
                 </label>
               );
             })}

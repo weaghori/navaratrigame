@@ -6,6 +6,7 @@ import { boundary } from "@shopify/shopify-app-react-router/server";
 import { authenticate } from "../shopify.server";
 import { getActiveCampaign, updateCampaign } from "../services/campaign.server";
 import prisma from "../db.server";
+import { campaignLevelTemplate } from "../services/campaign-level-template";
 
 const IST_OFFSET = "+05:30";
 
@@ -21,7 +22,10 @@ function parseIstDateTime(value: string) {
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session } = await authenticate.admin(request);
 
-  const campaign = await getActiveCampaign(session.shop);
+  const campaign = await prisma.campaign.findFirst({
+    where: { shop: session.shop },
+    orderBy: { createdAt: "desc" }
+  });
 
   return {
     campaign: campaign
@@ -37,6 +41,46 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 export const action = async ({ request }: ActionFunctionArgs) => {
   const { admin, session } = await authenticate.admin(request);
   const formData = await request.formData();
+
+  const intent = formData.get("intent");
+  if (intent === "initialize") {
+    const startDate = new Date();
+    const endDate = new Date(startDate.getTime() + 9 * 24 * 60 * 60 * 1000);
+    
+    try {
+      const newCampaign = await prisma.campaign.create({
+        data: {
+          shop: session.shop,
+          name: "Navratri Challenge",
+          slug: "navratri-challenge",
+          description: "Complete 10 festive challenges, collect 1,000 points, and unlock exclusive rewards.",
+          startDate,
+          endDate,
+          status: "draft",
+          maxPoints: 1000,
+        }
+      });
+
+      for (const level of campaignLevelTemplate) {
+        await prisma.level.create({
+          data: {
+            campaignId: newCampaign.id,
+            levelNumber: level.levelNumber,
+            title: level.title,
+            description: level.description,
+            activityType: level.activityType,
+            points: level.points,
+            config: level.config,
+            isActive: true,
+          }
+        });
+      }
+      return { success: true, message: "Campaign initialized successfully." };
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to initialize campaign";
+      return { success: false, error: message };
+    }
+  }
 
   const id = String(formData.get("id") || "");
   const name = String(formData.get("name") || "").trim();
@@ -161,9 +205,9 @@ export default function CampaignPage() {
   useEffect(() => {
     if (actionData?.success) {
       shopify.toast.show(
-        actionData.pointsReset
+        (actionData as any).message || (actionData.pointsReset
           ? "New campaign schedule saved. Customer progress, submissions, points history, and campaign rewards have been reset."
-          : "Campaign settings saved successfully!",
+          : "Campaign settings saved successfully!"),
       );
     } else if (actionData?.error) {
       shopify.toast.show(actionData.error, { isError: true });
@@ -176,7 +220,13 @@ export default function CampaignPage() {
         <s-section heading="No Active Campaign">
           <div style={{ padding: "32px", textAlign: "center", background: "#ffffff", borderRadius: "10px", border: "1px solid #e1e3e5" }}>
             <div style={{ fontSize: "16px", fontWeight: "bold", color: "#202223" }}>No campaign found</div>
-            <div style={{ fontSize: "13px", color: "#6d7175", marginTop: "4px" }}>Please run database seed or initialize campaign.</div>
+            <div style={{ fontSize: "13px", color: "#6d7175", marginTop: "4px" }}>Initialize a default campaign for your store to get started.</div>
+            <Form method="post" style={{ marginTop: "16px" }}>
+              <input type="hidden" name="intent" value="initialize" />
+              <s-button type="submit" variant="primary" disabled={isSaving}>
+                {isSaving ? "Initializing..." : "Initialize Campaign"}
+              </s-button>
+            </Form>
           </div>
         </s-section>
       </s-page>

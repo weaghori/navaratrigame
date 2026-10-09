@@ -1,3 +1,4 @@
+import cardImage from "../../styles/card-image.webp";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 type SpecialActivityProps = {
@@ -157,14 +158,12 @@ export function SpecialActivity({
       .join(", ");
     return (
       <section className="spin-wheel-panel" aria-label="Spin and win challenge">
-        <h4 className="spin-wheel-title">{String(config.wheelTitle || "SPIN TO WIN")}</h4>
-        <div className="spin-wheel-ribbon">✦ {String(config.wheelRibbonText || "FORTUNE WHEEL")} ✦</div>
+
         <div className="spin-wheel-frame">
           <div aria-hidden="true" className="spin-wheel-pointer" />
           <div
             className="spin-wheel-disc"
             role="img"
-            aria-label={`Fortune wheel with prizes: ${rewards.join(", ")}`}
             style={{
               background: `conic-gradient(from -${segment / 2}deg, ${wheelGradient})`,
               transform: `rotate(${wheelRotation}deg)`,
@@ -193,7 +192,7 @@ export function SpecialActivity({
           if (!spinPrize) onPrepareSpin();
         }}>{spinning ? "Spinning…" : wheelArmed && !spinPrize ? "Choosing your prize…" : String(config.spinButtonText || "Spin & Win")}</button>
         {error && <p className="spin-wheel-error" role="alert">{error}</p>}
-        <p className="spin-wheel-footnote">Complete your spin to earn {points} points.</p>
+
       </section>
     );
   }
@@ -222,8 +221,8 @@ export function SpecialActivity({
                 }} 
               >
                 <div className="memory-card-inner">
-                  <div className="memory-card-hidden">
-                    <div className="memory-card-hidden-pattern">✦ 🪔 ✦</div>
+                  <div className="memory-card-hidden" style={{ padding: 0 }}>
+                    <img src={cardImage} alt="Card Back" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "inherit" }} />
                   </div>
                   <div className="memory-card-revealed">
                     {imageFace ? <img src={face} alt="Navratri memory card" style={{ maxWidth: "100%", maxHeight: 54, objectFit: "contain" }} /> : face}
