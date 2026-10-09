@@ -1237,17 +1237,6 @@ export default function CustomerCampaignPage() {
 
   // GoKwik / KwikPass compatible login targeting the storefront origin.
   const triggerLogin = () => {
-    const win = window as unknown as Record<string, unknown>;
-    if (win.GoKwikUI && typeof (win.GoKwikUI as Record<string, unknown>).login === "function") {
-      (win.GoKwikUI as Record<string, () => void>).login(); return;
-    }
-    if (win.gokwik && typeof (win.gokwik as Record<string, unknown>).login === "function") {
-      (win.gokwik as Record<string, () => void>).login(); return;
-    }
-    if (win.Kwikpass && typeof (win.Kwikpass as Record<string, unknown>).login === "function") {
-      (win.Kwikpass as Record<string, () => void>).login(); return;
-    }
-    
     const fullLoginUrl = getLoginUrl({
       slug: campaign.slug,
       isDev: initialData.isDev,
@@ -1257,6 +1246,7 @@ export default function CustomerCampaignPage() {
     const a = document.createElement("a");
     a.href = fullLoginUrl;
     a.setAttribute("data-gokwik-login", "true");
+    a.setAttribute("data-redirect-url", window.location.pathname + window.location.search);
     a.style.display = "none";
     document.body.appendChild(a);
 
