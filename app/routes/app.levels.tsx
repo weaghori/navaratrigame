@@ -483,7 +483,7 @@ export default function LevelsPage() {
               <input type="hidden" name="actionType" value="apply_10_level_template" />
               <input type="hidden" name="campaignId" value={campaign.id} />
               <input type="url" name="templateProductImageUrl" placeholder="Level 7 product image URL (required)" aria-label="Product image URL for the Product Benefits challenge" defaultValue={currentProductImageUrl} required style={{ width: 250, padding: "7px 9px", border: "1px solid #d1d5db", borderRadius: 6 }} />
-              <s-button type="submit" variant="primary" disabled={isSubmitting}>Apply 10-Level Flow</s-button>
+              <button type="submit"  disabled={isSubmitting} style={{ background: "#000", color: "#fff", padding: "10px 20px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }}>Apply 10-Level Flow</button>
             </Form>
             <span
               style={{
@@ -544,7 +544,7 @@ export default function LevelsPage() {
           <input type="hidden" name="campaignId" value={campaign.id} />
           <input type="url" name="templateProductImageUrl" placeholder="Replace Level 7 image (optional)" aria-label="Optional replacement product image URL for the Product Benefits challenge" defaultValue={currentProductImageUrl} style={{ width: 250, padding: "7px 9px", border: "1px solid #d1d5db", borderRadius: 6 }} />
           <input type="text" name="resetConfirmation" placeholder="Type RESET to confirm" aria-label="Type RESET to confirm data deletion" pattern="RESET" required style={{ width: 200, padding: "7px 9px", border: "1px solid #d1d5db", borderRadius: 6 }} />
-          <s-button type="submit" disabled={isSubmitting}>Reset Levels &amp; All Player Data</s-button>
+          <button type="submit" disabled={isSubmitting} style={{ background: "#000", color: "#fff", padding: "10px 20px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }}>Reset Levels &amp; All Player Data</button>
         </Form>
       </details>
 
@@ -672,13 +672,13 @@ export default function LevelsPage() {
                     <input type="hidden" name="actionType" value="toggle_active" />
                     <input type="hidden" name="campaignId" value={campaign.id} />
                     <input type="hidden" name="levelId" value={lvl.id} />
-                    <s-button type="submit" variant={lvl.isActive ? "tertiary" : "primary"}>
+                    <button type="submit" variant={lvl.isActive ? "tertiary" : "primary"} style={{ background: "#000", color: "#fff", padding: "10px 20px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }}>
                       {lvl.isActive ? "Disable" : "Enable"}
-                    </s-button>
+                    </button>
                   </Form>
-                  <s-button variant="primary" onClick={() => openEditor(lvl)}>
+                  <button  onClick={() = style={{ background: "#000", color: "#fff", padding: "10px 20px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }}> openEditor(lvl)}>
                     Edit
-                  </s-button>
+                  </button>
                 </div>
               </div>
             </div>
@@ -1063,12 +1063,12 @@ export default function LevelsPage() {
 
                 <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "12px" }}>
                   {mediaUploadMessage && <p role="status" style={{ margin: "12px 0", color: mediaUploadMessage.toLowerCase().includes("failed") || mediaUploadMessage.includes("Could not") ? "#b42318" : "#475467" }}>{mediaUploadMessage}</p>}
-                  <s-button type="button" onClick={() => setEditingLevel(null)}>
+                  <button type="button" onClick={() = style={{ background: "#000", color: "#fff", padding: "10px 20px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }}> setEditingLevel(null)}>
                     Cancel
-                  </s-button>
-                  <s-button type="submit" variant="primary" disabled={isSubmitting || uploadingMedia}>
+                  </button>
+                  <button type="submit"  disabled={isSubmitting || uploadingMedia} style={{ background: "#000", color: "#fff", padding: "10px 20px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }}>
                     {uploadingMedia ? "Uploading media..." : isSubmitting ? "Saving..." : "Save Level Changes"}
-                  </s-button>
+                  </button>
                 </div>
               </div>
             </Form>
@@ -1086,3 +1086,4 @@ export function ErrorBoundary() {
 export const headers: HeadersFunction = (headersArgs) => {
   return boundary.headers(headersArgs);
 };
+

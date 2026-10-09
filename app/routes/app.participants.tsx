@@ -123,9 +123,9 @@ export default function ParticipantsPage() {
               fontSize: "13px",
             }}
           />
-          <s-button type="submit" variant="primary">
+          <button type="submit"  style={{ background: "#000", color: "#fff", padding: "10px 20px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }}>
             Search
-          </s-button>
+          </button>
           {query && (
             <a
               href="/app/participants"
@@ -255,3 +255,4 @@ export function ErrorBoundary() {
 export const headers: HeadersFunction = (headersArgs) => {
   return boundary.headers(headersArgs);
 };
+

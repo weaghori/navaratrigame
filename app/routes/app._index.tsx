@@ -205,9 +205,9 @@ export default function Index() {
             <div style={{ fontSize: "14px", color: "#6d7175", maxWidth: "480px", margin: "0 auto 24px" }}>
               No active campaign is configured yet. Set up your 10-level challenge campaign to begin engaging customers.
             </div>
-            <s-button variant="primary" onClick={() => navigate("/app/campaign")}>
+            <button  onClick={() = style={{ background: "#000", color: "#fff", padding: "10px 20px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }}> navigate("/app/campaign")}>
               Create First Campaign
-            </s-button>
+            </button>
           </div>
         </s-section>
       </s-page>
@@ -497,15 +497,15 @@ export default function Index() {
             flexWrap: "wrap",
           }}
         >
-          <s-button variant="primary" onClick={() => navigate("/app/submissions")}>
+          <button  onClick={() = style={{ background: "#000", color: "#fff", padding: "10px 20px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }}> navigate("/app/submissions")}>
             Review Submissions ({stats.pendingSubmissions})
-          </s-button>
-          <s-button onClick={() => navigate("/app/levels")}>Manage 10 Levels</s-button>
-          <s-button onClick={() => navigate("/app/leaderboard")}>Leaderboard</s-button>
-          <s-button onClick={() => navigate("/app/winners")}>Top 25 Winners</s-button>
-          <s-button onClick={() => navigate("/app/rewards")}>Rewards</s-button>
-          <s-button onClick={() => navigate("/app/dev-tools")}>🧪 Dev Tools</s-button>
-          <s-button onClick={() => navigate("/app/campaign")}>Settings</s-button>
+          </button>
+          <button onClick={() = style={{ background: "#000", color: "#fff", padding: "10px 20px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }}> navigate("/app/levels")}>Manage 10 Levels</button>
+          <button onClick={() = style={{ background: "#000", color: "#fff", padding: "10px 20px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }}> navigate("/app/leaderboard")}>Leaderboard</button>
+          <button onClick={() = style={{ background: "#000", color: "#fff", padding: "10px 20px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }}> navigate("/app/winners")}>Top 25 Winners</button>
+          <button onClick={() = style={{ background: "#000", color: "#fff", padding: "10px 20px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }}> navigate("/app/rewards")}>Rewards</button>
+          <button onClick={() = style={{ background: "#000", color: "#fff", padding: "10px 20px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }}> navigate("/app/dev-tools")}>🧪 Dev Tools</button>
+          <button onClick={() = style={{ background: "#000", color: "#fff", padding: "10px 20px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }}> navigate("/app/campaign")}>Settings</button>
         </div>
       </div>
 
@@ -736,7 +736,7 @@ export default function Index() {
             <div style={{ fontSize: "16px", fontWeight: "bold", color: "#202223" }}>
               Recent Submissions
             </div>
-            <s-button onClick={() => navigate("/app/submissions")}>View All</s-button>
+            <button onClick={() = style={{ background: "#000", color: "#fff", padding: "10px 20px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }}> navigate("/app/submissions")}>View All</button>
           </div>
 
           {recentSubmissions.length === 0 ? (
@@ -783,7 +783,7 @@ export default function Index() {
                         </span>
                       </td>
                       <td style={{ padding: "10px 6px", textAlign: "right" }}>
-                        <s-button onClick={() => navigate("/app/submissions")}>Review</s-button>
+                        <button onClick={() = style={{ background: "#000", color: "#fff", padding: "10px 20px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }}> navigate("/app/submissions")}>Review</button>
                       </td>
                     </tr>
                   ))}
@@ -807,7 +807,7 @@ export default function Index() {
             <div style={{ fontSize: "16px", fontWeight: "bold", color: "#202223" }}>
               Recent Activity & Points Stream
             </div>
-            <s-button onClick={() => navigate("/app/points")}>Points Log</s-button>
+            <button onClick={() = style={{ background: "#000", color: "#fff", padding: "10px 20px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }}> navigate("/app/points")}>Points Log</button>
           </div>
 
           {recentTransactions.length === 0 ? (
@@ -873,3 +873,4 @@ export function ErrorBoundary() {
 export const headers: HeadersFunction = (headersArgs) => {
   return boundary.headers(headersArgs);
 };
+

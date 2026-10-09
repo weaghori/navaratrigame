@@ -3413,3 +3413,20 @@ body {
   color: #ffffff !important;
   text-shadow: 0 1px 3px rgba(0,0,0,0.6);
 }
+/* FIX FOR MEMORY CARD BACKGROUND AND TEXTAREA TRANSPARENCY */
+.memory-card-hidden {
+  background: none !important;
+  border: none !important;
+}
+.memory-card-hidden img {
+  border-radius: 12px;
+}
+.festive-modal-card textarea, .festive-modal-card input[type="text"] {
+  background: rgba(0, 0, 0, 0.25) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.4) !important;
+  color: #ffffff !important;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.8) !important;
+}
+.festive-modal-card textarea::placeholder, .festive-modal-card input[type="text"]::placeholder {
+  color: rgba(255, 255, 255, 0.7) !important;
+}

@@ -347,9 +347,9 @@ export default function SubmissionsPage() {
                     </td>
                     <td style={{ padding: "14px 16px", textAlign: "right" }}>
                       <div style={{ display: "inline-flex", gap: "8px" }}>
-                        <s-button onClick={() => setActiveReviewSubmission(sub)}>
+                        <button onClick={() = style={{ background: "#000", color: "#fff", padding: "10px 20px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }}> setActiveReviewSubmission(sub)}>
                           {isPending ? "Review" : "View"}
-                        </s-button>
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -477,25 +477,25 @@ export default function SubmissionsPage() {
                 </div>
 
                 <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "20px" }}>
-                  <s-button type="button" onClick={() => setActiveReviewSubmission(null)}>
+                  <button type="button" onClick={() = style={{ background: "#000", color: "#fff", padding: "10px 20px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }}> setActiveReviewSubmission(null)}>
                     Close
-                  </s-button>
-                  <s-button
+                  </button>
+                  <button
                     type="submit"
-                    variant="primary"
+                    
                     disabled={isSubmitting}
-                    onClick={() => { if (reviewActionInputRef.current) reviewActionInputRef.current.value = "approve"; setChosenAction("approve"); }}
+                    onClick={() = style={{ background: "#000", color: "#fff", padding: "10px 20px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }}> { if (reviewActionInputRef.current) reviewActionInputRef.current.value = "approve"; setChosenAction("approve"); }}
                   >
                     {isSubmitting && chosenAction === "approve" ? "Approving..." : activeReviewSubmission.level?.levelNumber === 10 ? "✓ Save Feedback (0 Points)" : "✓ Approve & Award Points"}
-                  </s-button>
-                  <s-button
+                  </button>
+                  <button
                     type="submit"
-                    variant="secondary"
+                    
                     disabled={isSubmitting}
-                    onClick={() => { if (reviewActionInputRef.current) reviewActionInputRef.current.value = "reject"; setChosenAction("reject"); }}
+                    onClick={() = style={{ background: "#fff", color: "#000", border: "1px solid #ccc", padding: "10px 20px", borderRadius: "6px", cursor: "pointer", fontWeight: 600 }}> { if (reviewActionInputRef.current) reviewActionInputRef.current.value = "reject"; setChosenAction("reject"); }}
                   >
                     {isSubmitting && chosenAction === "reject" ? "Rejecting..." : "✕ Reject"}
-                  </s-button>
+                  </button>
                 </div>
               </Form>
             </div>
@@ -513,3 +513,4 @@ export function ErrorBoundary() {
 export const headers: HeadersFunction = (headersArgs) => {
   return boundary.headers(headersArgs);
 };
+

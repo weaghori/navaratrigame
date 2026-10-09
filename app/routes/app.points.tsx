@@ -176,9 +176,9 @@ export default function PointsHistoryPage() {
               Immutable record of all level completion rewards, referral bonuses, and administrative adjustments.
             </div>
           </div>
-          <s-button variant="primary" onClick={() => setShowAdjustmentModal(true)}>
+          <button  onClick={() = style={{ background: "#000", color: "#fff", padding: "10px 20px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }}> setShowAdjustmentModal(true)}>
             + Manual Points Adjustment
-          </s-button>
+          </button>
         </div>
 
         {/* Filter Tabs */}
@@ -422,12 +422,12 @@ export default function PointsHistoryPage() {
                 </div>
 
                 <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "12px" }}>
-                  <s-button type="button" onClick={() => setShowAdjustmentModal(false)}>
+                  <button type="button" onClick={() = style={{ background: "#000", color: "#fff", padding: "10px 20px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }}> setShowAdjustmentModal(false)}>
                     Cancel
-                  </s-button>
-                  <s-button type="submit" variant="primary" disabled={isSubmitting}>
+                  </button>
+                  <button type="submit"  disabled={isSubmitting} style={{ background: "#000", color: "#fff", padding: "10px 20px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }}>
                     {isSubmitting ? "Applying..." : "Confirm Adjustment"}
-                  </s-button>
+                  </button>
                 </div>
               </div>
             </Form>
@@ -445,3 +445,4 @@ export function ErrorBoundary() {
 export const headers: HeadersFunction = (headersArgs) => {
   return boundary.headers(headersArgs);
 };
+

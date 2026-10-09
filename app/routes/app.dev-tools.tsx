@@ -399,9 +399,9 @@ export default function DevToolsPage() {
           <Form method="post">
             <input type="hidden" name="campaignId" value={campaign.id} />
             <input type="hidden" name="actionType" value="create_test_participant" />
-            <s-button type="submit" variant="primary" disabled={isSubmitting}>
+            <button type="submit"  disabled={isSubmitting} style={{ background: "#000", color: "#fff", padding: "10px 20px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }}>
               + Create Test Participant
-            </s-button>
+            </button>
           </Form>
         </div>
 
@@ -411,7 +411,7 @@ export default function DevToolsPage() {
           <Form method="post">
             <input type="hidden" name="campaignId" value={campaign.id} />
             <input type="hidden" name="actionType" value="fast_forward_all_test_participants" />
-            <s-button type="submit" variant="primary" disabled={isSubmitting}>⚡ Set Test Users to 1,000</s-button>
+            <button type="submit"  disabled={isSubmitting} style={{ background: "#000", color: "#fff", padding: "10px 20px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }}>⚡ Set Test Users to 1,000</button>
           </Form>
         </div>
         <div style={{ background: "#ffffff", borderRadius: "10px", padding: "20px", border: "1px solid #e1e3e5", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
@@ -424,9 +424,9 @@ export default function DevToolsPage() {
           <Form method="post">
             <input type="hidden" name="campaignId" value={campaign.id} />
             <input type="hidden" name="actionType" value="finalize_top25" />
-            <s-button type="submit" variant="primary" disabled={isSubmitting}>
+            <button type="submit"  disabled={isSubmitting} style={{ background: "#000", color: "#fff", padding: "10px 20px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }}>
               🔒 Finalize Top 25
-            </s-button>
+            </button>
           </Form>
         </div>
       </div>
@@ -509,17 +509,17 @@ export default function DevToolsPage() {
                           <input type="hidden" name="campaignId" value={campaign.id} />
                           <input type="hidden" name="actionType" value="approve_submission" />
                           <input type="hidden" name="submissionId" value={pendingSub.id} />
-                          <s-button type="submit" variant="primary" disabled={isSubmitting}>
+                          <button type="submit"  disabled={isSubmitting} style={{ background: "#000", color: "#fff", padding: "10px 20px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }}>
                             {pendingSub.level?.levelNumber === 10 ? "✓ Save Feedback (0 pts)" : "✓ Approve (+100)"}
-                          </s-button>
+                          </button>
                         </Form>
                         <Form method="post" style={{ display: "inline" }}>
                           <input type="hidden" name="campaignId" value={campaign.id} />
                           <input type="hidden" name="actionType" value="reject_submission" />
                           <input type="hidden" name="submissionId" value={pendingSub.id} />
-                          <s-button type="submit" variant="secondary" disabled={isSubmitting}>
+                          <button type="submit"  disabled={isSubmitting} style={{ background: "#fff", color: "#000", border: "1px solid #ccc", padding: "10px 20px", borderRadius: "6px", cursor: "pointer", fontWeight: 600 }}>
                             ✕ Reject
-                          </s-button>
+                          </button>
                         </Form>
                       </div>
                     </div>
@@ -532,9 +532,9 @@ export default function DevToolsPage() {
                       <input type="hidden" name="actionType" value="award_test_points" />
                       <input type="hidden" name="customerProgressId" value={p.id} />
                       <input type="hidden" name="points" value="100" />
-                      <s-button type="submit" disabled={isSubmitting}>
+                      <button type="submit" disabled={isSubmitting} style={{ background: "#000", color: "#fff", padding: "10px 20px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }}>
                         +100 Points
-                      </s-button>
+                      </button>
                     </Form>
 
                     {/* Fast forward to 1000 */}
@@ -543,9 +543,9 @@ export default function DevToolsPage() {
                         <input type="hidden" name="campaignId" value={campaign.id} />
                         <input type="hidden" name="actionType" value="fast_forward_1000" />
                         <input type="hidden" name="customerProgressId" value={p.id} />
-                        <s-button type="submit" disabled={isSubmitting}>
+                        <button type="submit" disabled={isSubmitting} style={{ background: "#000", color: "#fff", padding: "10px 20px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }}>
                           ⚡ Reach 1,000 Pts
-                        </s-button>
+                        </button>
                       </Form>
                     )}
 
@@ -554,9 +554,9 @@ export default function DevToolsPage() {
                       <input type="hidden" name="campaignId" value={campaign.id} />
                       <input type="hidden" name="actionType" value="simulate_photo_submission" />
                       <input type="hidden" name="customerProgressId" value={p.id} />
-                      <s-button type="submit" disabled={isSubmitting}>
+                      <button type="submit" disabled={isSubmitting} style={{ background: "#000", color: "#fff", padding: "10px 20px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }}>
                         📷 Submit Photo
-                      </s-button>
+                      </button>
                     </Form>
 
                     {/* Simulate Referral */}
@@ -564,9 +564,9 @@ export default function DevToolsPage() {
                       <input type="hidden" name="campaignId" value={campaign.id} />
                       <input type="hidden" name="actionType" value="simulate_referral_flow" />
                       <input type="hidden" name="customerProgressId" value={p.id} />
-                      <s-button type="submit" disabled={isSubmitting}>
+                      <button type="submit" disabled={isSubmitting} style={{ background: "#000", color: "#fff", padding: "10px 20px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }}>
                         🤝 Referral (+100)
-                      </s-button>
+                      </button>
                     </Form>
 
                     {/* Issue Reward */}
@@ -574,9 +574,9 @@ export default function DevToolsPage() {
                       <input type="hidden" name="campaignId" value={campaign.id} />
                       <input type="hidden" name="actionType" value="issue_test_reward" />
                       <input type="hidden" name="customerProgressId" value={p.id} />
-                      <s-button type="submit" variant="primary" disabled={isSubmitting || p.totalPoints < 1000}>
+                      <button type="submit"  disabled={isSubmitting || p.totalPoints < 1000} style={{ background: "#000", color: "#fff", padding: "10px 20px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }}>
                         🎁 Issue Reward
-                      </s-button>
+                      </button>
                     </Form>
 
                     {/* Reset */}
@@ -584,9 +584,9 @@ export default function DevToolsPage() {
                       <input type="hidden" name="campaignId" value={campaign.id} />
                       <input type="hidden" name="actionType" value="reset_participant_progress" />
                       <input type="hidden" name="customerProgressId" value={p.id} />
-                      <s-button type="submit" variant="secondary" disabled={isSubmitting}>
+                      <button type="submit"  disabled={isSubmitting} style={{ background: "#fff", color: "#000", border: "1px solid #ccc", padding: "10px 20px", borderRadius: "6px", cursor: "pointer", fontWeight: 600 }}>
                         ↺ Reset
-                      </s-button>
+                      </button>
                     </Form>
                   </div>
                 </div>
@@ -606,3 +606,4 @@ export function ErrorBoundary() {
 export const headers: HeadersFunction = (headersArgs) => {
   return boundary.headers(headersArgs);
 };
+

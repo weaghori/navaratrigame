@@ -313,9 +313,9 @@ export default function RewardsPage() {
                     Total Score: <strong>{candidate.totalPoints} pts</strong> • Day {candidate.currentLevel} Completed
                   </div>
                 </div>
-                <s-button variant="primary" onClick={() => setSelectedCandidate(candidate)}>
+                <button  onClick={() = style={{ background: "#000", color: "#fff", padding: "10px 20px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }}> setSelectedCandidate(candidate)}>
                   Issue 10% Discount
-                </s-button>
+                </button>
               </div>
             ))}
           </div>
@@ -462,9 +462,9 @@ export default function RewardsPage() {
                             <input type="hidden" name="campaignId" value={campaign.id} />
                             <input type="hidden" name="actionType" value="cancel_reward" />
                             <input type="hidden" name="rewardId" value={r.id} />
-                            <s-button type="submit" variant="secondary">
+                            <button type="submit"  style={{ background: "#fff", color: "#000", border: "1px solid #ccc", padding: "10px 20px", borderRadius: "6px", cursor: "pointer", fontWeight: 600 }}>
                               Cancel
-                            </s-button>
+                            </button>
                           </Form>
                         )}
                       </td>
@@ -547,12 +547,12 @@ export default function RewardsPage() {
               </div>
 
               <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "20px" }}>
-                <s-button type="button" onClick={() => setSelectedCandidate(null)}>
+                <button type="button" onClick={() = style={{ background: "#000", color: "#fff", padding: "10px 20px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }}> setSelectedCandidate(null)}>
                   Cancel
-                </s-button>
-                <s-button type="submit" variant="primary" disabled={isSubmitting}>
+                </button>
+                <button type="submit"  disabled={isSubmitting} style={{ background: "#000", color: "#fff", padding: "10px 20px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }}>
                   {isSubmitting ? "Calling Shopify API..." : `Generate ${discountPercent}% Discount Code`}
-                </s-button>
+                </button>
               </div>
             </Form>
           </div>
@@ -569,3 +569,4 @@ export function ErrorBoundary() {
 export const headers: HeadersFunction = (headersArgs) => {
   return boundary.headers(headersArgs);
 };
+
