@@ -1415,7 +1415,17 @@ export default function CustomerCampaignPage() {
       method: "POST",
       credentials: "same-origin",
       headers: { "Content-Type": "application/json", Accept: "application/json" },
-      body: JSON.stringify({ intent: "authorize", levelId, submissionType, fileName: file.name, contentType: file.type, size: file.size }),
+      body: JSON.stringify({
+        intent: "authorize",
+        levelId,
+        submissionType,
+        fileName: file.name,
+        contentType: file.type,
+        size: file.size,
+        customer_id_from_liquid: initialData.customerBridge?.customerId || "",
+        customer_sig: initialData.customerBridge?.signature || "",
+        shop: initialData.shopDomain || "",
+      }),
     });
     const authorization = await authorizeResponse.json() as {
       success?: boolean; error?: string; uploadUrl?: string; finalizeToken?: string; requiredHeaders?: Record<string, string>;
@@ -1441,7 +1451,14 @@ export default function CustomerCampaignPage() {
       method: "POST",
       credentials: "same-origin",
       headers: { "Content-Type": "application/json", Accept: "application/json" },
-      body: JSON.stringify({ intent: "finalize", finalizeToken: authorization.finalizeToken, textResponse }),
+      body: JSON.stringify({
+        intent: "finalize",
+        finalizeToken: authorization.finalizeToken,
+        textResponse,
+        customer_id_from_liquid: initialData.customerBridge?.customerId || "",
+        customer_sig: initialData.customerBridge?.signature || "",
+        shop: initialData.shopDomain || "",
+      }),
     });
     const result = await finalizeResponse.json() as { success?: boolean; error?: string; message?: string };
     if (!finalizeResponse.ok || !result.success) throw new Error(result.error || "The uploaded image could not be finalized.");

@@ -55,15 +55,36 @@ function readToken(token: unknown): UploadToken | null {
   }
 }
 
-async function getProxyIdentity(request: Request): Promise<{ customerId: string; shop: string }> {
-  console.log("getProxyIdentity request.url:", request.url);
-  const { session } = await authenticate.public.appProxy(request);
-  const url = new URL(request.url);
-  const customerId = url.searchParams.get("logged_in_customer_id")?.trim();
-  const shop = (session as unknown as { shop?: string } | undefined)?.shop || url.searchParams.get("shop") || "";
-  if (!customerId || !/^\d+$/.test(customerId)) throw new Response("A logged-in Shopify customer is required.", { status: 401 });
-  if (!/^[a-z0-9][a-z0-9-]*\.myshopify\.com$/i.test(shop)) throw new Response("Invalid Shopify shop.", { status: 400 });
-  return { customerId, shop };
+async function getProxyIdentity(request: Request, body?: Record<string, unknown>): Promise<{ customerId: string; shop: string }> {
+  try {
+    const { session } = await authenticate.public.appProxy(request);
+    const url = new URL(request.url);
+    const customerId = url.searchParams.get("logged_in_customer_id")?.trim();
+    const shop = (session as unknown as { shop?: string } | undefined)?.shop || url.searchParams.get("shop") || "";
+    if (customerId && /^[a-z0-9][a-z0-9-]*\.myshopify\.com$/i.test(shop)) {
+      return { customerId, shop };
+    }
+  } catch (error) {
+    // Fallback to manual verification
+  }
+
+  if (body && body.customer_id_from_liquid && body.customer_sig && body.shop) {
+    const customerId = String(body.customer_id_from_liquid).trim();
+    const signature = String(body.customer_sig).trim();
+    const shop = String(body.shop).trim();
+    const secret = process.env.SHOPIFY_API_SECRET;
+    
+    if (customerId && signature && secret && /^[a-z0-9][a-z0-9-]*\.myshopify\.com$/i.test(shop)) {
+      const expected = createHmac("sha256", secret).update(customerId).digest("hex");
+      const expectedBuffer = Buffer.from(expected, "utf8");
+      const actualBuffer = Buffer.from(signature, "utf8");
+      if (actualBuffer.length === expectedBuffer.length && timingSafeEqual(actualBuffer, expectedBuffer)) {
+        return { customerId, shop };
+      }
+    }
+  }
+
+  throw new Response("A logged-in Shopify customer is required.", { status: 401 });
 }
 
 export async function loader({ request }: ActionFunctionArgs) {
@@ -108,16 +129,17 @@ export async function action({ params, request }: ActionFunctionArgs) {
   if (bodyGuard.tooLarge) return json({ success: false, error: "Request is too large." }, 413);
 
   let identity: { customerId: string; shop: string };
+  let body: Record<string, unknown> | undefined;
   try {
-    identity = await getProxyIdentity(bodyGuard.request.clone());
+    body = await bodyGuard.request.clone().json() as Record<string, unknown>;
+    identity = await getProxyIdentity(bodyGuard.request.clone(), body);
   } catch (error) {
     if (error instanceof Response) return error;
     return json({ success: false, error: "Shopify customer authentication failed." }, { status: 401 });
   }
 
   try {
-    const body = await bodyGuard.request.json() as Record<string, unknown>;
-    const intent = body.intent;
+    const intent = body?.intent;
 
     if (intent === "authorize") {
       const slug = String(params.slug || "");
