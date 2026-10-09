@@ -9,7 +9,7 @@ function validObjectKey(key: string): boolean {
   const fileName = parts.at(-1) || "";
   const folders = parts.slice(0, -1);
   return folders.every((part) => /^[A-Za-z0-9_-]{1,80}$/.test(part))
-    && /^[a-f0-9]{64}(?:_thumb)?\.[A-Za-z0-9]{1,10}$/i.test(fileName);
+    && /^[a-f0-9]{64}(?:_thumb)?\.[A-Za-z0-9]{1,20}$/i.test(fileName);
 }
 
 export async function loader({ request }: LoaderFunctionArgs): Promise<Response> {

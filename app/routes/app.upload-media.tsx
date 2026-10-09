@@ -19,6 +19,7 @@ type UploadTicket = {
   contentType: string;
   size: number;
   kind: "image" | "audio";
+  fileName: string;
   expiresAt: number;
 };
 
@@ -87,8 +88,9 @@ export async function action({ request }: ActionFunctionArgs) {
     // We no longer strictly enforce `level.activityType` here because an admin might
     // be changing a level from 'quiz' to 'audio_guess' and uploading the file before saving.
     // If we enforce it, they can't upload the file until they save, but they want to preview it first.
+    const fileName = String(body.fileName || "campaign-file");
     const key = `navratri/admin-staging/${randomBytes(24).toString("hex")}.upload`;
-    const ticket = signTicket({ shop: session.shop, campaignId, levelId, key, contentType, size, kind, expiresAt: Date.now() + 10 * 60_000 });
+    const ticket = signTicket({ shop: session.shop, campaignId, levelId, key, contentType, size, kind, fileName, expiresAt: Date.now() + 10 * 60_000 });
     const uploadUrl = await createR2PutUrl(key, contentType, size, 300);
     return Response.json({ uploadUrl, ticket });
   }
@@ -106,7 +108,7 @@ export async function action({ request }: ActionFunctionArgs) {
       const buffer = await readR2Object(ticket.key);
       if (buffer.length !== ticket.size) return Response.json({ error: "The uploaded file size could not be verified." }, { status: 400 });
       const result = await uploadMedia({
-        fileName: ticket.kind === "image" ? "product-benefits" : "campaign-audio",
+        fileName: ticket.fileName || (ticket.kind === "image" ? "product-benefits" : "campaign-audio"),
         buffer,
         contentType: ticket.contentType,
         folder: ticket.kind === "image" ? "campaign-product-images" : "campaign-audio",

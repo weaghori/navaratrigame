@@ -400,7 +400,7 @@ export default function LevelsPage() {
       const levelId = String(values.get("levelId") || "");
       const authorizeResponse = await fetch("/app/upload-media", {
         method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mode: "authorize", campaignId, levelId, contentType: file.type, size: file.size }),
+        body: JSON.stringify({ mode: "authorize", campaignId, levelId, contentType: file.type, size: file.size, fileName: file.name }),
       });
       const authorization = await authorizeResponse.json() as { uploadUrl?: string; ticket?: string; error?: string };
       if (!authorizeResponse.ok || !authorization.uploadUrl || !authorization.ticket) throw new Error(authorization.error || "Could not authorize the upload.");
@@ -933,7 +933,7 @@ export default function LevelsPage() {
                       </div>
                       <div>
                         <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "#4b5563" }}>Upload product image</label>
-                        <input type="file" name="text_imageFile" accept="image/jpeg,image/png,image/webp" disabled={uploadingMedia} onChange={(event) => { const file = event.currentTarget.files?.[0]; const form = event.currentTarget.form; if (file && form) void uploadAdminMedia(file, "image", form); event.currentTarget.value = ""; }} style={{ display: "block", width: "100%", marginBottom: 8 }} />
+                        <input type="file" name="text_imageFile" accept="image/jpeg,image/png,image/webp" disabled={uploadingMedia} onChange={(event) => { const file = event.currentTarget.files?.[0]; const form = event.currentTarget.form; if (file && form) void uploadAdminMedia(file, "image", form); }} style={{ display: "block", width: "100%", marginBottom: 8 }} />
                         <small style={{ display: "block", marginBottom: 8, color: "#6b7280" }}>JPEG, PNG, or WebP · max 10 MB. You can also paste an existing public image URL below.</small>
                         <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "#4b5563" }}>Product image URL (optional)</label>
                         <input type="url" name="text_imageUrl" defaultValue={String((editingLevel.config as Record<string, unknown>)?.imageUrl || (editingLevel.config as Record<string, unknown>)?.productImageUrl || "")} placeholder="https://cdn.shopify.com/..." style={{ width: "100%", padding: "6px 10px", borderRadius: "4px", border: "1px solid #d1d5db", boxSizing: "border-box" }} />
@@ -974,7 +974,7 @@ export default function LevelsPage() {
                       <label style={{ display: "grid", gap: 5 }}>Choices (optional; leave empty to let customers type the movie name)<textarea name="movie_options" rows={4} defaultValue={Array.isArray((editingLevel.config as Record<string, unknown>)?.options) ? ((editingLevel.config as Record<string, unknown>).options as unknown[]).map(String).join("\n") : ""} style={{ width: "100%", padding: 8, boxSizing: "border-box" }} /></label>
                       <label style={{ display: "grid", gap: 5 }}>Accepted spelling variants (optional, one per line)<textarea name="movie_accepted_answers" rows={2} defaultValue={Array.isArray((editingLevel.config as Record<string, unknown>)?.acceptedAnswers) ? ((editingLevel.config as Record<string, unknown>).acceptedAnswers as unknown[]).map(String).join("\n") : ""} style={{ width: "100%", padding: 8, boxSizing: "border-box" }} /></label>
                     </> : <>
-                      <label style={{ display: "grid", gap: 5 }}>Audio clip (MP3, M4A, AAC, OGG, WAV, WebM; max 25MB)<input type="file" name="audio_file" accept="audio/mpeg,audio/mp4,audio/aac,audio/ogg,audio/wav,audio/webm,audio/x-m4a" disabled={uploadingMedia} onChange={(event) => { const file = event.currentTarget.files?.[0]; const form = event.currentTarget.form; if (file && form) void uploadAdminMedia(file, "audio", form); event.currentTarget.value = ""; }} /></label>
+                      <label style={{ display: "grid", gap: 5 }}>Audio clip (MP3, M4A, AAC, OGG, WAV, WebM; max 25MB)<input type="file" name="audio_file" accept="audio/mpeg,audio/mp4,audio/aac,audio/ogg,audio/wav,audio/webm,audio/x-m4a" disabled={uploadingMedia} onChange={(event) => { const file = event.currentTarget.files?.[0]; const form = event.currentTarget.form; if (file && form) void uploadAdminMedia(file, "audio", form); }} /></label>
                       <input type="hidden" name="audio_uploadedUrl" value={uploadedMediaUrl.audio || ""} />
                       {typeof (editingLevel.config as Record<string, unknown>)?.audioUrl === "string" && Boolean((editingLevel.config as Record<string, unknown>).audioUrl) && <audio controls preload="metadata" src={`/api/campaigns/${encodeURIComponent(campaign.slug)}/audio?levelId=${encodeURIComponent(editingLevel.id)}&shop=${encodeURIComponent(campaign.shop)}`} style={{ width: "100%" }}>Audio preview</audio>}
                       <label style={{ display: "grid", gap: 5 }}>Question prompt<input name="audio_prompt" defaultValue={String((editingLevel.config as Record<string, unknown>)?.prompt || "Listen to the clip and enter the song or tune name.")} style={{ width: "100%", padding: 8, boxSizing: "border-box" }} /></label>
