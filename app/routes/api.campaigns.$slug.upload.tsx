@@ -66,15 +66,38 @@ async function getProxyIdentity(request: Request): Promise<{ customerId: string;
 }
 
 export async function action({ params, request }: ActionFunctionArgs) {
+  const requestOrigin = request.headers.get("Origin") || "";
+  const secureStorefrontOrigin = /^https:\/\/[a-z0-9.-]+(?::443)?$/i.test(requestOrigin);
+  const corsHeaders = secureStorefrontOrigin ? {
+    "Access-Control-Allow-Origin": requestOrigin,
+    "Access-Control-Allow-Credentials": "true",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Accept, Content-Type",
+    "Access-Control-Max-Age": "600",
+    Vary: "Origin",
+  } : undefined;
+
+  if (request.method === "OPTIONS") {
+    if (!secureStorefrontOrigin || !corsHeaders) {
+      return new Response(null, { status: 403 });
+    }
+    return new Response(null, { status: 204, headers: corsHeaders });
+  }
+
+  const json = (body: any, init?: ResponseInit | number) => {
+    const initObj = typeof init === "number" ? { status: init } : init;
+    return Response.json(body, { ...initObj, headers: corsHeaders });
+  };
+
   const bodyGuard = limitRequestBody(request, MAX_JSON_BYTES);
-  if (bodyGuard.tooLarge) return Response.json({ success: false, error: "Request is too large." }, { status: 413 });
+  if (bodyGuard.tooLarge) return json({ success: false, error: "Request is too large." }, 413);
 
   let identity: { customerId: string; shop: string };
   try {
     identity = await getProxyIdentity(bodyGuard.request.clone());
   } catch (error) {
     if (error instanceof Response) return error;
-    return Response.json({ success: false, error: "Shopify customer authentication failed." }, { status: 401 });
+    return json({ success: false, error: "Shopify customer authentication failed." }, { status: 401 });
   }
 
   try {
@@ -90,18 +113,18 @@ export async function action({ params, request }: ActionFunctionArgs) {
       const submissionType = body.submissionType === "final_submission" ? "final_submission" : "photo_upload";
 
       if (!levelId || !IMAGE_TYPES.has(contentType) || !Number.isInteger(size) || size < 1 || size > MAX_IMAGE_BYTES) {
-        return Response.json({ success: false, error: "Choose a JPEG, PNG, or WebP image up to 25 MB." }, { status: 400 });
+        return json({ success: false, error: "Choose a JPEG, PNG, or WebP image up to 25 MB." }, { status: 400 });
       }
 
       const campaign = await getCampaignBySlug(slug, identity.shop);
       if (!campaign || campaign.status !== "active" || getCampaignTimeStatus(campaign) !== "ACTIVE") {
-        return Response.json({ success: false, error: "Campaign not found or not active." }, { status: 404 });
+        return json({ success: false, error: "Campaign not found or not active." }, { status: 404 });
       }
       const level = await prisma.level.findUnique({ where: { id: levelId } });
       if (!level || level.campaignId !== campaign.id || !level.isActive
         || (level.activityType !== "photo_upload" && level.activityType !== "final_submission")
         || (submissionType === "photo_upload" && level.activityType !== "photo_upload")) {
-        return Response.json({ success: false, error: "This level does not accept an image upload." }, { status: 400 });
+        return json({ success: false, error: "This level does not accept an image upload." }, { status: 400 });
       }
       const levelConfig = level.config && typeof level.config === "object" && !Array.isArray(level.config)
         ? level.config as Record<string, unknown>
@@ -109,10 +132,10 @@ export async function action({ params, request }: ActionFunctionArgs) {
       const configuredLimitMb = Number(levelConfig.maxFileSizeMb);
       const maxAllowedBytes = Math.min(MAX_IMAGE_BYTES, (Number.isFinite(configuredLimitMb) && configuredLimitMb > 0 ? configuredLimitMb : 15) * 1024 * 1024);
       if (size > maxAllowedBytes) {
-        return Response.json({ success: false, error: "This challenge accepts images up to " + Math.floor(maxAllowedBytes / (1024 * 1024)) + " MB." }, { status: 413 });
+        return json({ success: false, error: "This challenge accepts images up to " + Math.floor(maxAllowedBytes / (1024 * 1024)) + " MB." }, { status: 413 });
       }
       if (!getLevelAvailabilitySchedule(level, campaign).isAvailableNow) {
-        return Response.json({ success: false, error: "This challenge is not currently available." }, { status: 400 });
+        return json({ success: false, error: "This challenge is not currently available." }, { status: 400 });
       }
 
       const uploadId = randomUUID().replace(/-/g, "");
@@ -124,7 +147,7 @@ export async function action({ params, request }: ActionFunctionArgs) {
         expiresAt: Date.now() + 10 * 60 * 1000,
       };
       const uploadUrl = await createR2PutUrl(key, contentType, size, 5 * 60);
-      return Response.json({
+      return json({
         success: true,
         uploadUrl,
         finalizeToken: createToken(payload),
@@ -135,24 +158,24 @@ export async function action({ params, request }: ActionFunctionArgs) {
     if (intent === "finalize") {
       const payload = readToken(body.finalizeToken);
       if (!payload || payload.customerId !== identity.customerId || payload.shop !== identity.shop || payload.slug !== String(params.slug || "")) {
-        return Response.json({ success: false, error: "Upload authorization is invalid or expired." }, { status: 403 });
+        return json({ success: false, error: "Upload authorization is invalid or expired." }, { status: 403 });
       }
 
       const campaign = await getCampaignBySlug(payload.slug, payload.shop);
       if (!campaign || campaign.id !== payload.campaignId || campaign.status !== "active" || getCampaignTimeStatus(campaign) !== "ACTIVE") {
-        return Response.json({ success: false, error: "Campaign not found or not active." }, { status: 404 });
+        return json({ success: false, error: "Campaign not found or not active." }, { status: 404 });
       }
       const metadata = await getR2ObjectMetadata(payload.key);
       if (metadata.size !== payload.size || metadata.size < 1 || metadata.size > MAX_IMAGE_BYTES
         || metadata.contentType.toLowerCase().split(";")[0].trim() !== payload.contentType) {
         await deleteR2Object(payload.key);
-        return Response.json({ success: false, error: "Uploaded image did not match its authorized size or type." }, { status: 400 });
+        return json({ success: false, error: "Uploaded image did not match its authorized size or type." }, { status: 400 });
       }
 
       try {
         const buffer = await readR2Object(payload.key);
         if (buffer.byteLength !== payload.size || buffer.byteLength > MAX_IMAGE_BYTES) {
-          return Response.json({ success: false, error: "Uploaded image size is invalid." }, { status: 400 });
+          return json({ success: false, error: "Uploaded image size is invalid." }, { status: 400 });
         }
         const result = await processMediaSubmission({
           campaignId: payload.campaignId,
@@ -170,7 +193,7 @@ export async function action({ params, request }: ActionFunctionArgs) {
           storageObjectName: randomUUID().replace(/-/g, ""),
           storageUserKey: createHmac("sha256", process.env.SHOPIFY_API_SECRET || "").update(payload.customerId).digest("hex").slice(0, 32),
         });
-        return Response.json({ success: true, message: result.message });
+        return json({ success: true, message: result.message });
       } finally {
         await deleteR2Object(payload.key).catch((error) => {
           console.warn("Temporary R2 upload cleanup failed.", error instanceof Error ? error.name : "Unknown error");
@@ -178,13 +201,16 @@ export async function action({ params, request }: ActionFunctionArgs) {
       }
     }
 
-    return Response.json({ success: false, error: "Unsupported upload operation." }, { status: 400 });
+    return json({ success: false, error: "Unsupported upload operation." }, { status: 400 });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Image upload failed.";
-    return Response.json({ success: false, error: message }, { status: 400 });
+    return json({ success: false, error: message }, { status: 400 });
   }
 }
 
 export async function loader() {
   return Response.json({ success: false, error: "Method not allowed." }, { status: 405, headers: { Allow: "POST" } });
 }
+
+
+
