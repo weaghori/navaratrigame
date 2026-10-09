@@ -1422,12 +1422,17 @@ export default function CustomerCampaignPage() {
       throw new Error(authorization.error || "Could not authorize the image upload.");
     }
 
-    const uploadResponse = await fetch(`${proxyBasePath}/api/proxy-upload?target=${encodeURIComponent(authorization.uploadUrl)}`, {
+    let uploadResponse;
+    try {
+      uploadResponse = await fetch(authorization.uploadUrl, {
       method: "PUT",
       credentials: "omit",
       headers: authorization.requiredHeaders,
       body: file,
     });
+    } catch (error) {
+      throw new Error("Upload failed due to CORS. Please add a CORS rule to your Cloudflare R2 bucket allowing PUT from this domain.");
+    }
     if (!uploadResponse.ok) throw new Error("The image could not be uploaded to storage. Please try again.");
 
     const finalizeResponse = await fetch(endpoint, {

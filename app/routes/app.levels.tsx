@@ -403,9 +403,14 @@ export default function LevelsPage() {
       });
       const authorization = await authorizeResponse.json() as { uploadUrl?: string; ticket?: string; error?: string };
       if (!authorizeResponse.ok || !authorization.uploadUrl || !authorization.ticket) throw new Error(authorization.error || "Could not authorize the upload.");
-      const putResponse = await fetch(`/api/proxy-upload?target=${encodeURIComponent(authorization.uploadUrl)}`, {
+      let putResponse;
+      try {
+        putResponse = await fetch(authorization.uploadUrl, {
         method: "PUT", credentials: "omit", headers: { "Content-Type": file.type }, body: file,
       });
+      } catch (error) {
+        throw new Error("Upload failed due to CORS. Please add a CORS rule to your Cloudflare R2 bucket allowing PUT from this domain.");
+      }
       if (!putResponse.ok) throw new Error(`Storage rejected the upload (${putResponse.status}). Check the R2 bucket CORS settings.`);
       const finalizeResponse = await fetch("/app/upload-media", {
         method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" },
