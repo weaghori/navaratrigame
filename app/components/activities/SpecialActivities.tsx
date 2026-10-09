@@ -221,11 +221,10 @@ export function SpecialActivity({
                 }}
               >
                 <div className="memory-card-inner">
-                  <div className="memory-card-hidden" style={{ padding: 0 }}>
-                    <img src={cardImage} alt="Card Back" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "inherit" }} />
+                  <div className="memory-card-hidden" style={{ padding: 0, backgroundImage: `url(${cardImage})`, backgroundSize: "cover", backgroundPosition: "center", borderRadius: "12px", border: "none" }}>
                   </div>
-                  <div className="memory-card-revealed">
-                    {imageFace ? <img src={face} alt="Navratri memory card" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : face}
+                  <div className="memory-card-revealed" style={imageFace ? { padding: 0, backgroundImage: `url(${face})`, backgroundSize: "cover", backgroundPosition: "center", borderRadius: "12px", border: "none" } : {}}>
+                    {!imageFace && face}
                   </div>
                 </div>
               </button>

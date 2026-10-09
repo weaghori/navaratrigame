@@ -381,6 +381,7 @@ export default function LevelsPage() {
   const [activityConfigText, setActivityConfigText] = useState("{}");
   const [uploadingMedia, setUploadingMedia] = useState(false);
   const [mediaUploadMessage, setMediaUploadMessage] = useState("");
+  const [uploadedMediaUrl, setUploadedMediaUrl] = useState<Record<string, string>>({});
 
   const isSubmitting = navigation.state === "submitting";
   const levelSeven = levels.find((level) => level.levelNumber === 7);
@@ -421,6 +422,7 @@ export default function LevelsPage() {
       const field = form.elements.namedItem(kind === "image" ? "text_imageUrl" : "audio_uploadedUrl");
       if (!(field instanceof HTMLInputElement)) throw new Error("The form field for the media URL was not found.");
       field.value = finalized.url;
+      setUploadedMediaUrl(prev => ({ ...prev, [kind]: finalized.url as string }));
       field.dispatchEvent(new Event("input", { bubbles: true }));
       field.dispatchEvent(new Event("change", { bubbles: true }));
       setMediaUploadMessage(`${kind === "image" ? "Image" : "Audio clip"} uploaded and verified. Save the level to apply it.`);
@@ -441,6 +443,7 @@ export default function LevelsPage() {
   }, [actionData, shopify]);
 
   const openEditor = (lvl: (typeof levels)[0]) => {
+    setUploadedMediaUrl({});
     setEditingLevel(lvl);
     setSelectedActivityType(lvl.activityType);
     setActivityConfigText(JSON.stringify(lvl.config || defaultActivityConfig[lvl.activityType] || {}, null, 2));
@@ -972,7 +975,7 @@ export default function LevelsPage() {
                       <label style={{ display: "grid", gap: 5 }}>Accepted spelling variants (optional, one per line)<textarea name="movie_accepted_answers" rows={2} defaultValue={Array.isArray((editingLevel.config as Record<string, unknown>)?.acceptedAnswers) ? ((editingLevel.config as Record<string, unknown>).acceptedAnswers as unknown[]).map(String).join("\n") : ""} style={{ width: "100%", padding: 8, boxSizing: "border-box" }} /></label>
                     </> : <>
                       <label style={{ display: "grid", gap: 5 }}>Audio clip (MP3, M4A, AAC, OGG, WAV, WebM; max 25MB)<input type="file" name="audio_file" accept="audio/mpeg,audio/mp4,audio/aac,audio/ogg,audio/wav,audio/webm,audio/x-m4a" disabled={uploadingMedia} onChange={(event) => { const file = event.currentTarget.files?.[0]; const form = event.currentTarget.form; if (file && form) void uploadAdminMedia(file, "audio", form); event.currentTarget.value = ""; }} /></label>
-                      <input type="hidden" name="audio_uploadedUrl" defaultValue="" />
+                      <input type="hidden" name="audio_uploadedUrl" value={uploadedMediaUrl.audio || ""} />
                       {typeof (editingLevel.config as Record<string, unknown>)?.audioUrl === "string" && Boolean((editingLevel.config as Record<string, unknown>).audioUrl) && <audio controls preload="metadata" src={`/api/campaigns/${encodeURIComponent(campaign.slug)}/audio?levelId=${encodeURIComponent(editingLevel.id)}&shop=${encodeURIComponent(campaign.shop)}`} style={{ width: "100%" }}>Audio preview</audio>}
                       <label style={{ display: "grid", gap: 5 }}>Question prompt<input name="audio_prompt" defaultValue={String((editingLevel.config as Record<string, unknown>)?.prompt || "Listen to the clip and enter the song or tune name.")} style={{ width: "100%", padding: 8, boxSizing: "border-box" }} /></label>
                       <label style={{ display: "grid", gap: 5 }}>Correct song / tune answer<input name="audio_answer" required defaultValue={String((editingLevel.config as Record<string, unknown>)?.answer || "")} style={{ width: "100%", padding: 8, boxSizing: "border-box" }} /></label>
