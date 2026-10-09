@@ -1660,6 +1660,7 @@ export default function CustomerCampaignPage() {
     form.append("actionType", "prepare_spin");
     form.append("levelId", activeLevelModal.id);
     form.append("customerId", customerId);
+    addCustomerBridge(form);
     setIsSpinFlowBusy(true);
     void sendSpinRequest(form, true);
   }, [activeLevelModal, customerId, sendSpinRequest]);
