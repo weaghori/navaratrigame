@@ -63,11 +63,16 @@ function applyLevelChallengeCopy<T extends LevelWithChallengeCopy>(level: T): T 
     : {};
   const nextConfig = { ...currentConfig };
   for (const key of ["sectionTitle", "tagline", "steps", "requirement", "instructions", "hideActivityInstructions"]) {
-    if (Object.prototype.hasOwnProperty.call(templateConfig, key)) nextConfig[key] = templateConfig[key];
-    else if (key === "hideActivityInstructions") delete nextConfig[key];
+    if (Object.prototype.hasOwnProperty.call(currentConfig, key) && currentConfig[key] !== "") {
+      nextConfig[key] = currentConfig[key];
+    } else if (Object.prototype.hasOwnProperty.call(templateConfig, key)) {
+      nextConfig[key] = templateConfig[key];
+    } else if (key === "hideActivityInstructions") {
+      delete nextConfig[key];
+    }
   }
 
-  return { ...level, title: template.title, description: template.description, config: nextConfig };
+  return { ...level, title: level.title || template.title, description: level.description || template.description, config: nextConfig };
 }
 
 function sanitizeClientLevel<T extends LevelWithChallengeCopy & {
@@ -140,8 +145,8 @@ function sanitizeClientLevel<T extends LevelWithChallengeCopy & {
   }
   return applyLevelChallengeCopy({
     ...l,
-    title: isLocked ? "Surprise Challenge" : template?.title || l.title,
-    description: isLocked ? null : template?.description || l.description,
+    title: isLocked ? "Surprise Challenge" : l.title || template?.title || "",
+    description: isLocked ? null : l.description || template?.description || "",
     activityType: isLocked ? "locked" : l.activityType,
     config: isLocked ? null : safeConfig,
   });
@@ -1417,7 +1422,7 @@ export default function CustomerCampaignPage() {
       throw new Error(authorization.error || "Could not authorize the image upload.");
     }
 
-    const uploadResponse = await fetch(authorization.uploadUrl, {
+    const uploadResponse = await fetch(`${proxyBasePath}/api/proxy-upload?target=${encodeURIComponent(authorization.uploadUrl)}`, {
       method: "PUT",
       credentials: "omit",
       headers: authorization.requiredHeaders,
