@@ -19,10 +19,11 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   if (!audioUrl) return new Response("Audio clip not found.", { status: 404 });
 
   if (audioUrl.startsWith("r2:") || audioUrl.startsWith("/api/media?")) {
-    const path = audioUrl.startsWith("r2:")
+    const mediaPath = audioUrl.startsWith("r2:")
       ? `/api/media${audioUrl.slice(3)}`
       : audioUrl;
-    return Response.redirect(new URL(path, url.origin), 302);
+    const basePath = url.pathname.replace(/\/api\/campaigns\/[^/]+\/audio$/, "");
+    return Response.redirect(new URL(`${basePath}${mediaPath}`, url.origin), 302);
   }
 
   if (audioUrl.startsWith("data:")) {

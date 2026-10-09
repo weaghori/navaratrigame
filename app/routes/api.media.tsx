@@ -17,39 +17,43 @@ export async function loader({ request }: LoaderFunctionArgs): Promise<Response>
   const key = url.searchParams.get("key") || "";
   if (!validObjectKey(key)) return new Response("Media not found.", { status: 404 });
 
+  const isPublicAsset = key.startsWith("campaign-audio/") || key.startsWith("campaign-product-images/");
+
   let customerId: string | null = null;
   let adminShop: string | null = null;
   const isProxyRequest = url.searchParams.has("signature");
 
-  try {
-    if (isProxyRequest) {
-      const { session } = await authenticate.public.appProxy(request);
-      if (session) {
-        const accessInfo = (session as any).onlineAccessInfo;
-        if (accessInfo?.associated_user?.id) {
-          customerId = String(accessInfo.associated_user.id);
+  if (!isPublicAsset) {
+    try {
+      if (isProxyRequest) {
+        const { session } = await authenticate.public.appProxy(request);
+        if (session) {
+          const accessInfo = (session as any).onlineAccessInfo;
+          if (accessInfo?.associated_user?.id) {
+            customerId = String(accessInfo.associated_user.id);
+          }
         }
+        if (!customerId) {
+          const proxyCustomerId = url.searchParams.get("logged_in_customer_id");
+          if (proxyCustomerId) customerId = proxyCustomerId.trim();
+        }
+        if (!customerId) return new Response("Unauthorized proxy access.", { status: 401 });
+      } else {
+        const { session } = await authenticate.admin(request);
+        adminShop = session.shop;
       }
-      if (!customerId) {
-        const proxyCustomerId = url.searchParams.get("logged_in_customer_id");
-        if (proxyCustomerId) customerId = proxyCustomerId.trim();
-      }
-      if (!customerId) return new Response("Unauthorized proxy access.", { status: 401 });
-    } else {
-      const { session } = await authenticate.admin(request);
-      adminShop = session.shop;
+    } catch (error) {
+      if (error instanceof Response) return error;
+      return new Response("Authentication error", { status: 401 });
     }
-  } catch (error) {
-    if (error instanceof Response) return error;
-    return new Response("Authentication error", { status: 401 });
   }
 
   const baseKey = key.replace(/_thumb(\.[a-zA-Z0-9]+)$/, "$1");
   const encodedKey = encodeURIComponent(key);
   const encodedBaseKey = encodeURIComponent(baseKey);
 
-  let isAuthorized = false;
-  if (customerId) {
+  let isAuthorized = isPublicAsset;
+  if (!isAuthorized && customerId) {
     const count = await prisma.submission.count({
       where: {
         OR: [
@@ -60,7 +64,7 @@ export async function loader({ request }: LoaderFunctionArgs): Promise<Response>
       }
     });
     if (count > 0) isAuthorized = true;
-  } else if (adminShop) {
+  } else if (!isAuthorized && adminShop) {
     const count = await prisma.submission.count({
       where: {
         OR: [

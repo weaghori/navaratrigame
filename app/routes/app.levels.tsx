@@ -101,40 +101,40 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
     try {
       await prisma.$transaction(async (tx) => {
-      const existingAudio = await tx.level.findFirst({ where: { campaignId, activityType: "audio_guess" }, select: { config: true } });
-      const existingProductLevel = await tx.level.findFirst({ where: { campaignId, levelNumber: 7 }, select: { config: true } });
-      const existingAudioConfig = existingAudio?.config && typeof existingAudio.config === "object" && !Array.isArray(existingAudio.config)
-        ? existingAudio.config as Record<string, unknown>
-        : {};
-      const existingProductConfig = existingProductLevel?.config && typeof existingProductLevel.config === "object" && !Array.isArray(existingProductLevel.config)
-        ? existingProductLevel.config as Record<string, unknown>
-        : {};
-      const productImageUrl = requestedProductImageUrl || String(existingProductConfig.imageUrl || existingProductConfig.productImageUrl || "");
+        const existingAudio = await tx.level.findFirst({ where: { campaignId, activityType: "audio_guess" }, select: { config: true } });
+        const existingProductLevel = await tx.level.findFirst({ where: { campaignId, levelNumber: 7 }, select: { config: true } });
+        const existingAudioConfig = existingAudio?.config && typeof existingAudio.config === "object" && !Array.isArray(existingAudio.config)
+          ? existingAudio.config as Record<string, unknown>
+          : {};
+        const existingProductConfig = existingProductLevel?.config && typeof existingProductLevel.config === "object" && !Array.isArray(existingProductLevel.config)
+          ? existingProductLevel.config as Record<string, unknown>
+          : {};
+        const productImageUrl = requestedProductImageUrl || String(existingProductConfig.imageUrl || existingProductConfig.productImageUrl || "");
 
-      await tx.notification.deleteMany({ where: { campaignId } });
-      await tx.auditEvent.deleteMany({ where: { campaignId } });
-      await tx.referral.deleteMany({ where: { campaignId } });
-      await tx.submission.deleteMany({ where: { campaignId } });
-      await tx.customerProgress.deleteMany({ where: { campaignId } });
+        await tx.notification.deleteMany({ where: { campaignId } });
+        await tx.auditEvent.deleteMany({ where: { campaignId } });
+        await tx.referral.deleteMany({ where: { campaignId } });
+        await tx.submission.deleteMany({ where: { campaignId } });
+        await tx.customerProgress.deleteMany({ where: { campaignId } });
 
-      for (const level of campaignLevelTemplate) {
-        const config = level.levelNumber === 6
-          ? {
+        for (const level of campaignLevelTemplate) {
+          const config = level.levelNumber === 6
+            ? {
               ...level.config,
               ...(typeof existingAudioConfig.audioUrl === "string" && existingAudioConfig.audioUrl ? { audioUrl: existingAudioConfig.audioUrl } : {}),
               ...(typeof existingAudioConfig.answer === "string" && existingAudioConfig.answer ? { answer: existingAudioConfig.answer } : {}),
               ...(Array.isArray(existingAudioConfig.acceptedAnswers) ? { acceptedAnswers: existingAudioConfig.acceptedAnswers } : {}),
             }
-          : level.levelNumber === 7
-            ? { ...level.config, imageUrl: productImageUrl }
-            : level.config;
-        await tx.level.upsert({
-          where: { campaignId_levelNumber: { campaignId, levelNumber: level.levelNumber } },
-          update: { title: level.title, description: level.description, activityType: level.activityType, points: level.points, config: config as Prisma.InputJsonObject, isActive: true, availableFrom: null, availableUntil: null },
-          create: { campaignId, ...level, config: config as Prisma.InputJsonObject, isActive: true },
-        });
-      }
-      await tx.level.deleteMany({ where: { campaignId, OR: [{ levelNumber: { gt: 10 } }, { levelNumber: { lt: 1 } }] } });
+            : level.levelNumber === 7
+              ? { ...level.config, imageUrl: productImageUrl }
+              : level.config;
+          await tx.level.upsert({
+            where: { campaignId_levelNumber: { campaignId, levelNumber: level.levelNumber } },
+            update: { title: level.title, description: level.description, activityType: level.activityType, points: level.points, config: config as Prisma.InputJsonObject, isActive: true, availableFrom: null, availableUntil: null },
+            create: { campaignId, ...level, config: config as Prisma.InputJsonObject, isActive: true },
+          });
+        }
+        await tx.level.deleteMany({ where: { campaignId, OR: [{ levelNumber: { gt: 10 } }, { levelNumber: { lt: 1 } }] } });
         await tx.campaign.update({ where: { id: campaignId }, data: { maxPoints: 1000, unlockMode: "sequential", unlockIntervalHours: 24, description: "Complete 10 festive challenges, collect 1,000 points, and unlock exclusive rewards." } });
       }, { maxWait: 15000, timeout: 30000 });
     } catch (error) {
@@ -160,11 +160,11 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     for (const level of campaignLevelTemplate) {
       const config = level.levelNumber === 6
         ? {
-            ...level.config,
-            ...(typeof existingAudioConfig.audioUrl === "string" && existingAudioConfig.audioUrl ? { audioUrl: existingAudioConfig.audioUrl } : {}),
-            ...(typeof existingAudioConfig.answer === "string" && existingAudioConfig.answer ? { answer: existingAudioConfig.answer } : {}),
-            ...(Array.isArray(existingAudioConfig.acceptedAnswers) ? { acceptedAnswers: existingAudioConfig.acceptedAnswers } : {}),
-          }
+          ...level.config,
+          ...(typeof existingAudioConfig.audioUrl === "string" && existingAudioConfig.audioUrl ? { audioUrl: existingAudioConfig.audioUrl } : {}),
+          ...(typeof existingAudioConfig.answer === "string" && existingAudioConfig.answer ? { answer: existingAudioConfig.answer } : {}),
+          ...(Array.isArray(existingAudioConfig.acceptedAnswers) ? { acceptedAnswers: existingAudioConfig.acceptedAnswers } : {}),
+        }
         : level.levelNumber === 7
           ? { ...level.config, imageUrl: productImageUrl }
           : level.config;
@@ -407,8 +407,8 @@ export default function LevelsPage() {
       let putResponse;
       try {
         putResponse = await fetch(authorization.uploadUrl, {
-        method: "PUT", credentials: "omit", headers: { "Content-Type": file.type }, body: file,
-      });
+          method: "PUT", credentials: "omit", headers: { "Content-Type": file.type }, body: file,
+        });
       } catch (error) {
         throw new Error("Upload failed due to CORS. Please add a CORS rule to your Cloudflare R2 bucket allowing PUT from this domain.");
       }
@@ -491,7 +491,7 @@ export default function LevelsPage() {
               <input type="hidden" name="actionType" value="apply_10_level_template" />
               <input type="hidden" name="campaignId" value={campaign.id} />
               <input type="url" name="templateProductImageUrl" placeholder="Level 7 product image URL (required)" aria-label="Product image URL for the Product Benefits challenge" defaultValue={currentProductImageUrl} required style={{ width: 250, padding: "7px 9px", border: "1px solid #d1d5db", borderRadius: 6 }} />
-              <button type="submit"  disabled={isSubmitting} style={{ background: "#000", color: "#fff", padding: "10px 20px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }}>Apply 10-Level Flow</button>
+              <button type="submit" disabled={isSubmitting} style={{ background: "#000", color: "#fff", padding: "10px 20px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }}>Apply 10-Level Flow</button>
             </Form>
             <span
               style={{
@@ -680,11 +680,11 @@ export default function LevelsPage() {
                     <input type="hidden" name="actionType" value="toggle_active" />
                     <input type="hidden" name="campaignId" value={campaign.id} />
                     <input type="hidden" name="levelId" value={lvl.id} />
-                    <button type="submit"  style={{ background: "#000", color: "#fff", padding: "10px 20px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }}>
+                    <button type="submit" style={{ background: "#000", color: "#fff", padding: "10px 20px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }}>
                       {lvl.isActive ? "Disable" : "Enable"}
                     </button>
                   </Form>
-                  <button  style={{ background: "#000", color: "#fff", padding: "10px 20px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }} onClick={() => openEditor(lvl)}>
+                  <button style={{ background: "#000", color: "#fff", padding: "10px 20px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }} onClick={() => openEditor(lvl)}>
                     Edit
                   </button>
                 </div>
@@ -994,27 +994,27 @@ export default function LevelsPage() {
                     </p>
                     {selectedActivityType === "treasure_hunt" && (
                       <>
-                      <div style={{ gridColumn: "1 / -1", marginBottom: 12, padding: 12, background: "#fff7ed", border: "1px solid #fed7aa", borderRadius: 8, fontSize: 12, lineHeight: 1.5 }}>
-                        The storefront button appears after you enable the app embed. <a href={themeEmbedSetupUrl} target="_top" rel="noreferrer" style={{ fontWeight: 700 }}>Open your store&apos;s theme editor</a>, enable <strong>Treasure hunt button</strong>, then set campaign <code>{campaign.slug}</code> and level <code>{editingLevel.levelNumber}</code>. Shopify keeps this embed off until it is enabled in the theme editor.
-                      </div>
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
-                        <div>
-                          <label style={{ display: "block", fontSize: 12, fontWeight: 700, marginBottom: 5 }}>Eligible products</label>
-                          <input type="hidden" name="eligibleProductHandles" value="" />
-                          <select multiple name="eligibleProductHandles" defaultValue={Array.isArray((editingLevel.config as Record<string, unknown>)?.eligibleProductHandles) ? (editingLevel.config as Record<string, unknown>).eligibleProductHandles as string[] : []} size={6} style={{ width: "100%", border: "1px solid #d1d5db", borderRadius: 6, padding: 6 }}>
-                            {products.map((product) => <option key={product.id} value={product.handle}>{product.title} · {product.handle}</option>)}
-                          </select>
-                          {products.length === 0 && <small>Product list unavailable. Check the app&apos;s product access scope.</small>}
+                        <div style={{ gridColumn: "1 / -1", marginBottom: 12, padding: 12, background: "#fff7ed", border: "1px solid #fed7aa", borderRadius: 8, fontSize: 12, lineHeight: 1.5 }}>
+                          The storefront button appears after you enable the app embed. <a href={themeEmbedSetupUrl} target="_top" rel="noreferrer" style={{ fontWeight: 700 }}>Open your store&apos;s theme editor</a>, enable <strong>Treasure hunt button</strong>, then set campaign <code>{campaign.slug}</code> and level <code>{editingLevel.levelNumber}</code>. Shopify keeps this embed off until it is enabled in the theme editor.
                         </div>
-                        <div>
-                          <label style={{ display: "block", fontSize: 12, fontWeight: 700, marginBottom: 5 }}>Eligible collections</label>
-                          <input type="hidden" name="eligibleCategories" value="" />
-                          <select multiple name="eligibleCategories" defaultValue={Array.isArray((editingLevel.config as Record<string, unknown>)?.eligibleCategories) ? (editingLevel.config as Record<string, unknown>).eligibleCategories as string[] : []} size={6} style={{ width: "100%", border: "1px solid #d1d5db", borderRadius: 6, padding: 6 }}>
-                            {collections.map((collection) => <option key={collection.id} value={collection.handle}>{collection.title} · {collection.handle}</option>)}
-                          </select>
-                          {collections.length === 0 && <small>Collection list unavailable. Check the app&apos;s product access scope.</small>}
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+                          <div>
+                            <label style={{ display: "block", fontSize: 12, fontWeight: 700, marginBottom: 5 }}>Eligible products</label>
+                            <input type="hidden" name="eligibleProductHandles" value="" />
+                            <select multiple name="eligibleProductHandles" defaultValue={Array.isArray((editingLevel.config as Record<string, unknown>)?.eligibleProductHandles) ? (editingLevel.config as Record<string, unknown>).eligibleProductHandles as string[] : []} size={6} style={{ width: "100%", border: "1px solid #d1d5db", borderRadius: 6, padding: 6 }}>
+                              {products.map((product) => <option key={product.id} value={product.handle}>{product.title} · {product.handle}</option>)}
+                            </select>
+                            {products.length === 0 && <small>Product list unavailable. Check the app&apos;s product access scope.</small>}
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: 12, fontWeight: 700, marginBottom: 5 }}>Eligible collections</label>
+                            <input type="hidden" name="eligibleCategories" value="" />
+                            <select multiple name="eligibleCategories" defaultValue={Array.isArray((editingLevel.config as Record<string, unknown>)?.eligibleCategories) ? (editingLevel.config as Record<string, unknown>).eligibleCategories as string[] : []} size={6} style={{ width: "100%", border: "1px solid #d1d5db", borderRadius: 6, padding: 6 }}>
+                              {collections.map((collection) => <option key={collection.id} value={collection.handle}>{collection.title} · {collection.handle}</option>)}
+                            </select>
+                            {collections.length === 0 && <small>Collection list unavailable. Check the app&apos;s product access scope.</small>}
+                          </div>
                         </div>
-                      </div>
                       </>
                     )}
                     {selectedActivityType === "spin_wheel" && (
@@ -1074,7 +1074,7 @@ export default function LevelsPage() {
                   <button type="button" style={{ background: "#000", color: "#fff", padding: "10px 20px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }} onClick={() => setEditingLevel(null)}>
                     Cancel
                   </button>
-                  <button type="submit"  disabled={isSubmitting || uploadingMedia} style={{ background: "#000", color: "#fff", padding: "10px 20px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }}>
+                  <button type="submit" disabled={isSubmitting || uploadingMedia} style={{ background: "#000", color: "#fff", padding: "10px 20px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }}>
                     {uploadingMedia ? "Uploading media..." : isSubmitting ? "Saving..." : "Save Level Changes"}
                   </button>
                 </div>
