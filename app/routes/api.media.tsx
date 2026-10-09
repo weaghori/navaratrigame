@@ -17,7 +17,7 @@ export async function loader({ request }: LoaderFunctionArgs): Promise<Response>
   const key = url.searchParams.get("key") || "";
   if (!validObjectKey(key)) return new Response("Media not found.", { status: 404 });
 
-  const isPublicAsset = key.startsWith("campaign-audio/") || key.startsWith("campaign-product-images/");
+  const isPublicAsset = key.startsWith("campaign-audio/") || key.startsWith("campaign-product-images/") || key.startsWith("legacy-media/");
 
   let customerId: string | null = null;
   let adminShop: string | null = null;
