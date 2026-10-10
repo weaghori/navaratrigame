@@ -50,17 +50,40 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     limit: 50,
   });
 
+  const submissionsWithUrls = await Promise.all(result.submissions.map(async (s) => {
+    let fileUrl = s.fileUrl;
+    if (fileUrl) {
+      if (fileUrl.startsWith("r2:")) {
+        const key = new URL(fileUrl.slice(3), "https://media.invalid").searchParams.get("key");
+        if (key) {
+          try {
+            const { createR2GetUrl } = await import("../services/r2.server");
+            fileUrl = await createR2GetUrl(key, 3600);
+          } catch {
+            fileUrl = appMediaPath(s.fileUrl);
+          }
+        } else {
+          fileUrl = appMediaPath(s.fileUrl);
+        }
+      } else {
+        fileUrl = appMediaPath(s.fileUrl);
+      }
+    }
+
+    return {
+      ...s,
+      fileUrl,
+      createdAt: s.createdAt.toISOString(),
+      reviewedAt: s.reviewedAt ? s.reviewedAt.toISOString() : null,
+    };
+  }));
+
   return {
     campaign: {
       id: campaign.id,
       name: campaign.name,
     },
-    submissions: result.submissions.map((s) => ({
-      ...s,
-      fileUrl: appMediaPath(s.fileUrl),
-      createdAt: s.createdAt.toISOString(),
-      reviewedAt: s.reviewedAt ? s.reviewedAt.toISOString() : null,
-    })),
+    submissions: submissionsWithUrls,
     totalCount: result.totalCount,
     hasMore: result.hasMore,
     statusFilter: status,

@@ -109,7 +109,7 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
 
     if (actionType === "prepare_spin") {
       const spinPrize = await prepareWheelSpin({ campaignId: campaign.id, levelId, shopifyCustomerId: customerId });
-      return Response.json({ success: true, outcome: "spin_prepared", spinPrize }, { headers: { "Cache-Control": "no-store" } });
+      return json({ success: true, outcome: "spin_prepared", spinPrize });
     }
 
     if (actionType === "complete_activity" && String(formData.get("activityType") || "") === "spin_wheel") {
@@ -122,7 +122,7 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
         spinAttemptToken: String(formData.get("spinAttemptToken") || "") || undefined,
       });
       if (result.levelNumber === 8) await tryCompleteReadyPurchaseForCustomer(campaign.id, customerId);
-      return Response.json({
+      return json({
         success: true,
         outcome: "points_awarded",
         pointsAwarded: result.pointsAwarded,
@@ -144,7 +144,7 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
         message: result.reward
           ? `🎉 You won ${result.reward}!${result.discountCode ? ` Your one-use code is ${result.discountCode}.` : ""} +${result.pointsAwarded} points added.`
           : `🎉 Challenge complete! +${result.pointsAwarded} points added.`,
-      }, { headers: { "Cache-Control": "no-store" } });
+      });
     }
 
     return Response.json({ success: false, error: "Invalid Spin & Win request." }, { status: 400 });

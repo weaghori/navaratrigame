@@ -48,7 +48,20 @@ export function SpecialActivity({
   const [wheelArmed, setWheelArmed] = useState(false);
   const animatedSpinToken = useRef<string | null>(null);
   const onCompleteRef = useRef(onComplete);
-  const [cards, setCards] = useState<string[]>([]);
+  const cardFaces = useMemo(() => {
+    const faces = Array.isArray(config.cards) && config.cards.length
+      ? config.cards.map(String).slice(0, 12)
+      : ["🪔", "🥁", "🪘", "💃", "👗", "🌸", "🛕", "🎶"];
+    return faces;
+  }, [config.cards]);
+
+  const [cards, setCards] = useState<string[]>(() => {
+    if (activityType === "memory_game") {
+      const deck = [...cardFaces, ...cardFaces].sort(() => Math.random() - 0.5);
+      return deck;
+    }
+    return [];
+  });
   const [open, setOpen] = useState<number[]>([]);
   const [matched, setMatched] = useState<number[]>([]);
   const [gameComplete, setGameComplete] = useState(false);
@@ -60,20 +73,14 @@ export function SpecialActivity({
     onCompleteRef.current = onComplete;
   }, [onComplete]);
 
-  const cardFaces = useMemo(() => {
-    const faces = Array.isArray(config.cards) && config.cards.length
-      ? config.cards.map(String).slice(0, 12)
-      : ["🪔", "🥁", "🪘", "💃", "👗", "🌸", "🛕", "🎶"];
-    return faces;
-  }, [config.cards]);
-
   useEffect(() => {
     if (activityType !== "memory_game") return;
     memoryCompletionSent.current = false;
     setGameComplete(false);
-    const deck = [...cardFaces, ...cardFaces].sort(() => Math.random() - 0.5);
-    setCards(deck);
-  }, [activityType, cardFaces]);
+    // Remove the asynchronous setting of cards to avoid flashing empty grid or duplicate initializations.
+    // The cards are already synchronously initialized in useState.
+    // Only re-shuffle if user actually changes campaign or manually resets, which they do via Try Again.
+  }, [activityType]);
 
   useEffect(() => {
     if (activityType !== "memory_game" || secondsLeft <= 0 || gameComplete) return;
@@ -287,8 +294,8 @@ export function SpecialActivity({
         <button type="submit" style={buttonStyle} disabled={activityType === "audio_guess" ? false : isSubmitting || (activityType === "movie_guess" && movieGuessesLeft <= 0)} aria-busy={isSubmitting}>
           {isSubmitting ? "Checking answer…" : activityType === "movie_guess" ? movieGuessesLeft <= 0 ? "No guesses remaining" : "Submit Movie Guess" : "Submit Answer"}
         </button>
-        {(activityType === "movie_guess" || activityType === "audio_guess") && answerFeedback && <p role={answerFeedback.correct ? "status" : "alert"} style={{ margin: 0, padding: 12, borderRadius: 8, color: answerFeedback.correct ? "#166534" : "#991b1b", background: answerFeedback.correct ? "#dcfce7" : "#fee2e2", fontWeight: 800, textAlign: "center" }}>{answerFeedback.message}</p>}
-        {error && <p role="alert" style={{ color: "#b91c1c" }}>{error}</p>}
+        {(activityType === "movie_guess" || activityType === "audio_guess") && answerFeedback && <p role={answerFeedback.correct ? "status" : "alert"} style={{ margin: 0, padding: 12, borderRadius: 8, color: answerFeedback.correct ? "#166534" : "#ffffff", background: answerFeedback.correct ? "#dcfce7" : "transparent", fontWeight: 800, textAlign: "center", textShadow: answerFeedback.correct ? "none" : "0 1px 3px rgba(0,0,0,0.4)" }}>{answerFeedback.message}</p>}
+        {error && <p role="alert" style={{ color: "#ffffff", background: "transparent", padding: 8, textShadow: "0 1px 3px rgba(0,0,0,0.4)", fontWeight: 800, textAlign: "center", margin: 0 }}>{error}</p>}
       </form>
     );
   }

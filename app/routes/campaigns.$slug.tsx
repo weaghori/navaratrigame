@@ -2000,8 +2000,8 @@ export default function CustomerCampaignPage() {
               ✕
             </button>
 
-            <div className="festive-modal-content">
-            <div className="festive-modal-heading">
+            <div className="festive-modal-content" style={{ display: "flex", flexDirection: "column", maxHeight: "85vh" }}>
+            <div className="festive-modal-heading" style={{ flexShrink: 0 }}>
               <span
                 className="challenge-reward-badge"
                 style={{
@@ -2045,85 +2045,86 @@ export default function CustomerCampaignPage() {
               )}
             </div>
 
-            {/* Render Resolved Activity */}
-            {activeLevelModal.activityType === "quiz" && (
-              <QuizActivity
-                levelId={activeLevelModal.id}
-                points={activeLevelModal.points}
-                config={(activeLevelModal.config as QuizConfig) || {}}
-                onSubmit={handleQuizSubmit}
-                isSubmitting={isQuizSubmitting}
-                error={quizError}
-              />
-            )}
+            <div style={{ flex: 1, minHeight: 0, overflowY: "auto", display: "flex", flexDirection: "column" }}>
+              {activeLevelModal.activityType === "quiz" && (
+                <QuizActivity
+                  levelId={activeLevelModal.id}
+                  points={activeLevelModal.points}
+                  config={(activeLevelModal.config as QuizConfig) || {}}
+                  onSubmit={handleQuizSubmit}
+                  isSubmitting={isQuizSubmitting}
+                  error={quizError}
+                />
+              )}
 
-            {activeLevelModal.activityType === "photo_upload" && (
-              <PhotoUploadActivity
-                levelId={activeLevelModal.id}
-                config={(activeLevelModal.config as PhotoConfig) || {}}
-                onSubmit={handlePhotoSubmit}
-                isSubmitting={isSubmitting || isPhotoUploading}
-                error={photoUploadError || actionData?.error}
-              />
-            )}
+              {activeLevelModal.activityType === "photo_upload" && (
+                <PhotoUploadActivity
+                  levelId={activeLevelModal.id}
+                  config={(activeLevelModal.config as PhotoConfig) || {}}
+                  onSubmit={handlePhotoSubmit}
+                  isSubmitting={isSubmitting || isPhotoUploading}
+                  error={photoUploadError || actionData?.error}
+                />
+              )}
 
-            {activeLevelModal.activityType === "text_submission" && (
-              <TextSubmissionActivity
-                levelId={activeLevelModal.id}
-                config={(activeLevelModal.config as TextConfig) || {}}
-                onSubmit={handleTextSubmit}
-                isSubmitting={isTextSubmitting}
-                error={textError}
-                winnerAnnouncements={initialData.winnerAnnouncements}
-              />
-            )}
+              {activeLevelModal.activityType === "text_submission" && (
+                <TextSubmissionActivity
+                  levelId={activeLevelModal.id}
+                  config={(activeLevelModal.config as TextConfig) || {}}
+                  onSubmit={handleTextSubmit}
+                  isSubmitting={isTextSubmitting}
+                  error={textError}
+                  winnerAnnouncements={initialData.winnerAnnouncements}
+                />
+              )}
 
-            {activeLevelModal.activityType === "final_submission" && (
-              <FinalSubmissionActivity
-                levelId={activeLevelModal.id}
-                points={activeLevelModal.points}
-                config={(activeLevelModal.config as FinalConfig) || {}}
-                onSubmit={handleFinalSubmit}
-                isSubmitting={isSubmitting}
-                error={actionData?.error}
-              />
-            )}
+              {activeLevelModal.activityType === "final_submission" && (
+                <FinalSubmissionActivity
+                  levelId={activeLevelModal.id}
+                  points={activeLevelModal.points}
+                  config={(activeLevelModal.config as FinalConfig) || {}}
+                  onSubmit={handleFinalSubmit}
+                  isSubmitting={isSubmitting}
+                  error={actionData?.error}
+                />
+              )}
 
-            {["spin_wheel", "treasure_hunt", "memory_game", "movie_guess", "audio_guess", "purchase"].includes(activeLevelModal.activityType) && (
-              <SpecialActivity
-                activityType={activeLevelModal.activityType}
-                levelNumber={activeLevelModal.levelNumber}
-                campaignSlug={initialData.campaign.slug}
-                points={activeLevelModal.points}
-                config={(activeLevelModal.config as Record<string, unknown>) || {}}
-                onComplete={handleSpecialActivity}
-                onPrepareSpin={handlePrepareSpin}
-                spinPrize={spinPrize}
-                attemptsRemaining={activeLevelModal.activityType === "movie_guess"
-                  ? (movieGuessFeedback?.levelId === activeLevelModal.id
-                    ? movieGuessFeedback.attemptsRemaining
-                    : Math.max(0, 3 - (activeLevelModal.movieGuessAttemptsUsed || 0)))
-                  : undefined}
-                isSubmitting={activeLevelModal.activityType === "memory_game" || activeLevelModal.activityType === "movie_guess" || activeLevelModal.activityType === "audio_guess"
-                  ? isSpecialActivitySubmitting
-                  : isSubmitting || activityFetcher.state !== "idle" || isSpinSubmitting}
-                error={activeLevelModal.activityType === "spin_wheel"
-                  ? spinError
-                  : activeLevelModal.activityType === "memory_game"
-                    ? specialActivityError
-                    : activityFetcher.data && "error" in activityFetcher.data ? activityFetcher.data.error : actionData?.error}
-                answerFeedback={(activeLevelModal.activityType === "movie_guess" || activeLevelModal.activityType === "audio_guess") && movieGuessFeedback?.levelId === activeLevelModal.id
-                  ? { correct: movieGuessFeedback.correct, message: movieGuessFeedback.message }
-                  : undefined}
-                storefrontUrl={storefrontUrl}
-              />
-            )}
+              {["spin_wheel", "treasure_hunt", "memory_game", "movie_guess", "audio_guess", "purchase"].includes(activeLevelModal.activityType) && (
+                <SpecialActivity
+                  activityType={activeLevelModal.activityType}
+                  levelNumber={activeLevelModal.levelNumber}
+                  campaignSlug={initialData.campaign.slug}
+                  points={activeLevelModal.points}
+                  config={(activeLevelModal.config as Record<string, unknown>) || {}}
+                  onComplete={handleSpecialActivity}
+                  onPrepareSpin={handlePrepareSpin}
+                  spinPrize={spinPrize}
+                  attemptsRemaining={activeLevelModal.activityType === "movie_guess"
+                    ? (movieGuessFeedback?.levelId === activeLevelModal.id
+                      ? movieGuessFeedback.attemptsRemaining
+                      : Math.max(0, 3 - (activeLevelModal.movieGuessAttemptsUsed || 0)))
+                    : undefined}
+                  isSubmitting={activeLevelModal.activityType === "memory_game" || activeLevelModal.activityType === "movie_guess" || activeLevelModal.activityType === "audio_guess"
+                    ? isSpecialActivitySubmitting
+                    : isSubmitting || activityFetcher.state !== "idle" || isSpinSubmitting}
+                  error={activeLevelModal.activityType === "spin_wheel"
+                    ? spinError
+                    : activeLevelModal.activityType === "memory_game"
+                      ? specialActivityError
+                      : activityFetcher.data && "error" in activityFetcher.data ? activityFetcher.data.error : actionData?.error}
+                  answerFeedback={(activeLevelModal.activityType === "movie_guess" || activeLevelModal.activityType === "audio_guess") && movieGuessFeedback?.levelId === activeLevelModal.id
+                    ? { correct: movieGuessFeedback.correct, message: movieGuessFeedback.message }
+                    : undefined}
+                  storefrontUrl={storefrontUrl}
+                />
+              )}
 
-            {!new Set(["quiz", "photo_upload", "text_submission", "final_submission", "spin_wheel", "treasure_hunt", "memory_game", "movie_guess", "audio_guess", "purchase"]).has(activeLevelModal.activityType) && (
-              <p role="status" style={{ textAlign: "center", padding: "20px", color: "#7c2d12" }}>
-                This saved challenge type is no longer supported. Please contact the store team to update this level.
-              </p>
-            )}
+              {!new Set(["quiz", "photo_upload", "text_submission", "final_submission", "spin_wheel", "treasure_hunt", "memory_game", "movie_guess", "audio_guess", "purchase"]).has(activeLevelModal.activityType) && (
+                <p role="status" style={{ textAlign: "center", padding: "20px", color: "#7c2d12" }}>
+                  This saved challenge type is no longer supported. Please contact the store team to update this level.
+                </p>
+              )}
+            </div>
             </div>
           </div>
         </div>,

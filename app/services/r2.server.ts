@@ -162,3 +162,12 @@ export async function getR2ObjectMetadata(key: string): Promise<{ size: number; 
   const result = await getClient(config).send(new HeadObjectCommand({ Bucket: config.bucketName, Key: key }));
   return { size: result.ContentLength || 0, contentType: result.ContentType || "" };
 }
+
+export async function createR2GetUrl(key: string, expiresIn = 3600): Promise<string> {
+  const config = readR2Config();
+  if (!config) throw new Error("Cloudflare R2 is not configured.");
+  return getSignedUrl(getClient(config), new GetObjectCommand({
+    Bucket: config.bucketName,
+    Key: key,
+  }), { expiresIn });
+}

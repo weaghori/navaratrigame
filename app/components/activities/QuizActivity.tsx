@@ -81,12 +81,14 @@ export function QuizActivity({ config, onSubmit, isSubmitting, error }: QuizActi
       ))}
 
       {error && <p role="alert" style={{ margin: 0, color: "#fecaca", fontWeight: 700 }}>{error}</p>}
-      <p style={{ margin: 0, color: "#cbd5d1", fontSize: 12, lineHeight: 1.5 }}>
-        Answer every question, then submit once. Your total is 50 points for each correct answer.
-      </p>
-      <button type="submit" disabled={!isComplete || isSubmitting} style={{ width: "100%", padding: "13px 16px", border: 0, borderRadius: 10, background: !isComplete || isSubmitting ? "#64748b" : "linear-gradient(135deg, #d97706, #b45309)", color: "#fff", fontWeight: 800, cursor: !isComplete || isSubmitting ? "not-allowed" : "pointer" }}>
-        {isSubmitting ? "Submitting quiz…" : isComplete ? "Submit all answers & see total points" : `Answer all ${questions.length} questions to submit`}
-      </button>
+      <div style={{ position: "sticky", bottom: -2, padding: "10px 0", background: "inherit", zIndex: 10, display: "grid", gap: 8 }}>
+        <p style={{ margin: 0, color: "#cbd5d1", fontSize: 12, lineHeight: 1.5, background: "rgba(15, 23, 42, 0.9)", padding: 6, borderRadius: 6 }}>
+          Answer every question, then submit once. Your total is 50 points for each correct answer.
+        </p>
+        <button type="submit" disabled={!isComplete || isSubmitting} style={{ width: "100%", padding: "13px 16px", border: 0, borderRadius: 10, background: !isComplete || isSubmitting ? "#64748b" : "linear-gradient(135deg, #d97706, #b45309)", color: "#fff", fontWeight: 800, cursor: !isComplete || isSubmitting ? "not-allowed" : "pointer", boxShadow: "0 -4px 12px rgba(0,0,0,0.2)" }}>
+          {isSubmitting ? "Submitting quiz…" : isComplete ? "Submit all answers & see total points" : `Answer all ${questions.length} questions to submit`}
+        </button>
+      </div>
     </form>
   );
 }
