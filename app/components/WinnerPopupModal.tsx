@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { LotusOrnament, KalashArtwork } from "./NavratriGraphics";
+import { KalashArtwork } from "./NavratriGraphics";
 
 export interface WinnerPopupModalProps {
   isOpen: boolean;
@@ -26,7 +26,6 @@ export function WinnerPopupModal({ isOpen, onClose, rank, prizeValue = "₹1,500
 
         {/* Festive Ornament Header */}
         <div className="winner-modal-graphic-container">
-          <LotusOrnament />
           <div className="winner-trophy-badge">
             <span className="trophy-emoji">🏆</span>
             {rank ? <span className="rank-pill">Rank #{rank}</span> : null}
@@ -67,9 +66,6 @@ export function WinnerPopupModal({ isOpen, onClose, rank, prizeValue = "₹1,500
         </div>
 
         {/* Bottom Decorative Floral Footer */}
-        <div style={{ marginTop: "16px", display: "flex", justifyContent: "center" }}>
-          <LotusOrnament />
-        </div>
       </div>
     </div>
   );

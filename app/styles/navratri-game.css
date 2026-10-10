@@ -2579,7 +2579,8 @@ body {
   .festive-modal-card.festive-challenge-dialog {
     width: min(92vw, 520px, calc(100vh - 20px)) !important;
     max-width: min(92vw, 520px, calc(100vh - 20px)) !important;
-    height: min(92vw, 520px, calc(100vh - 20px)) !important;
+    height: min(135vw, 650px, calc(100vh - 20px)) !important;
+    aspect-ratio: auto !important;
     max-height: calc(100vh - 20px) !important;
   }
 
@@ -2597,8 +2598,8 @@ body {
     .festive-modal-card.festive-challenge-dialog {
       width: min(94vw, 900px, calc(100dvh - 20px)) !important;
       max-width: 900px !important;
-      height: min(84.6vw, 810px, calc(90dvh - 18px)) !important;
-      aspect-ratio: 10 / 9;
+      height: min(135vw, 750px, calc(95dvh - 18px)) !important;
+      aspect-ratio: auto !important;
       max-height: calc(100dvh - 20px) !important;
     }
   }
@@ -2907,7 +2908,7 @@ body {
 }
 
 .hud-reward-copy { min-width: 0; }
-.hud-reward-copy .hud-stat-val { overflow: hidden; text-overflow: ellipsis; }
+.hud-reward-copy .hud-stat-val { overflow: hidden; text-overflow: ellipsis; word-break: break-all; }
 .hud-reward-code-label { color: #c7d1e0; font-weight: 500; }
 
 .hud-copy-code {

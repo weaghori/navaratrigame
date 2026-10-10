@@ -1811,7 +1811,6 @@ export default function CustomerCampaignPage() {
         {/* ================= HERO TITLE BANNER ================= */}
         <div className="nav-hero-section">
           <img src={brandLogo} alt="Aghori Store Logo" style={{ height: "60px", objectFit: "contain", margin: "0 auto 16px auto", display: "block" }} />
-          <LotusOrnament />
           <h1 className="hero-main-title">Navratri 2026</h1>
           <div className="hero-subtitle">
             10 Challenges • {initialData.campaign.maxPoints} Points • Exclusive Rewards
@@ -1819,9 +1818,6 @@ export default function CustomerCampaignPage() {
           <p className="hero-description">
             Unlock each day, complete the challenge, earn points and win amazing rewards!
           </p>
-          <div style={{ marginTop: "14px" }}>
-            <LotusOrnament />
-          </div>
         </div>
 
         {/* ================= LOGIN CARD (Unauthenticated Visitors) ================= */}
@@ -1951,12 +1947,6 @@ export default function CustomerCampaignPage() {
             position: "relative",
             overflow: "hidden"
           }}>
-            <div style={{ position: "absolute", top: -20, left: -20, opacity: 0.1, transform: "scale(2)" }}>
-              <LotusOrnament />
-            </div>
-            <div style={{ position: "absolute", bottom: -20, right: -20, opacity: 0.1, transform: "scale(2) rotate(180deg)" }}>
-              <LotusOrnament />
-            </div>
             
             <div style={{ fontSize: "64px", marginBottom: "16px", textShadow: "0 0 20px rgba(251,191,36,0.5)" }} aria-hidden="true">🎉🏆🎉</div>
             <h2 style={{
