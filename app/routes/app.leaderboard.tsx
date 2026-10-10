@@ -34,15 +34,18 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       name: campaign.name,
       maxPoints: campaign.maxPoints,
     },
-    leaderboard: result.participants.map((p) => ({
-      ...p,
-      maskedName: p.shopifyCustomerId.replace(/\D/g, "").slice(-4)
-        ? `Player #${p.shopifyCustomerId.replace(/\D/g, "").slice(-4)}`
-        : `Player #${p.rank}`,
-      createdAt: p.createdAt.toISOString(),
-      eligibleAt: p.eligibleAt ? p.eligibleAt.toISOString() : null,
-      completedAt: p.completedAt ? p.completedAt.toISOString() : null,
-    })),
+    leaderboard: result.participants.map((p) => {
+      const dbName = p.displayName?.trim() || "";
+      const rawIdDigits = p.shopifyCustomerId.replace(/\D/g, "");
+      const fallback = rawIdDigits.slice(-4) ? `Customer ...${rawIdDigits.slice(-6)}` : `Customer #${p.rank}`;
+      return {
+        ...p,
+        maskedName: dbName || fallback,
+        createdAt: p.createdAt.toISOString(),
+        eligibleAt: p.eligibleAt ? p.eligibleAt.toISOString() : null,
+        completedAt: p.completedAt ? p.completedAt.toISOString() : null,
+      };
+    }),
     totalCount: result.totalCount,
     query,
   };

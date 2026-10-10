@@ -144,3 +144,71 @@ export async function tryCompleteReadyPurchaseForCustomer(campaignId: string, sh
     return false;
   }
 }
+
+export async function checkAndRecordRecentOrders(shop: string, customerId: string, campaignId: string) {
+  try {
+    const { unauthenticated } = await import("../shopify.server");
+    const { admin } = await unauthenticated.admin(shop);
+    const response = await admin.graphql(
+      `query getCustomerOrders($id: ID!) {
+        customer(id: $id) {
+          orders(first: 10, sortKey: CREATED_AT, reverse: true) {
+            edges {
+              node {
+                id
+                name
+                createdAt
+                fullyPaid
+                totalPriceSet {
+                  shopMoney { amount }
+                }
+                lineItems(first: 20) {
+                  edges {
+                    node {
+                      product { id }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }`,
+      { variables: { id: `gid://shopify/Customer/${customerId}` } }
+    );
+    const data = await response.json();
+    const orders = data.data?.customer?.orders?.edges || [];
+    
+    let anyRecorded = false;
+    for (const edge of orders) {
+      const orderNode = edge.node;
+      if (!orderNode.fullyPaid) continue;
+      
+      const shopifyOrder = {
+        id: orderNode.id.split("/").pop(),
+        name: orderNode.name,
+        customer: { id: customerId },
+        financial_status: "paid",
+        total_price: orderNode.totalPriceSet?.shopMoney?.amount,
+        paid_at: orderNode.createdAt,
+        created_at: orderNode.createdAt,
+        line_items: orderNode.lineItems?.edges.map((li: any) => ({
+          product_id: li.node.product?.id?.split("/").pop() || null,
+        })) || [],
+      };
+      
+      const existing = await prisma.purchaseVerification.findFirst({
+        where: { shop, shopifyOrderId: String(shopifyOrder.id) }
+      });
+      if (!existing) {
+        await recordPaidShopifyOrder(shop, shopifyOrder);
+        anyRecorded = true;
+      }
+    }
+    
+    return await tryCompleteReadyPurchaseForCustomer(campaignId, customerId);
+  } catch (error) {
+    console.error("Failed to check recent orders manually:", error);
+    return false;
+  }
+}

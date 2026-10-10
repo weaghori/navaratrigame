@@ -154,6 +154,9 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
           textResponse,
         });
         const approved = result.status === "approved" && "progress" in result && "pointsAwarded" in result;
+        const { autoIssueRewardIfEligible } = await import("../services/reward.server");
+        const reward = approved && shopDomain ? await autoIssueRewardIfEligible(campaign.id, customerId, shopDomain) : null;
+        
         return json({
           success: true,
           outcome: approved
@@ -168,6 +171,12 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
             status: result.progress.status,
             eligibleAt: result.progress.eligibleAt?.toISOString() || null,
           } : undefined,
+          prizeLabel: reward ? `${reward.rewardValue}% OFF` : undefined,
+          discountPercent: reward?.rewardValue,
+          discountCode: reward?.discountCode,
+          useNowUrl: reward?.discountCode
+            ? `https://aghoristore.com/discount/${encodeURIComponent(reward.discountCode)}?redirect=%2Fcollections%2Fall`
+            : undefined,
           message: result.message,
         });
       }
@@ -201,6 +210,9 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
           shopifyCustomerId: customerId,
           selectedOption,
         });
+        const { autoIssueRewardIfEligible } = await import("../services/reward.server");
+        const reward = shopDomain ? await autoIssueRewardIfEligible(campaign.id, customerId, shopDomain) : null;
+
         return json({
           success: true,
           outcome: result.success ? "points_awarded" : "quiz_partial",
@@ -216,6 +228,12 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
             status: result.progress.status,
             eligibleAt: result.progress.eligibleAt?.toISOString() || null,
           },
+          prizeLabel: reward ? `${reward.rewardValue}% OFF` : undefined,
+          discountPercent: reward?.rewardValue,
+          discountCode: reward?.discountCode,
+          useNowUrl: reward?.discountCode
+            ? `https://aghoristore.com/discount/${encodeURIComponent(reward.discountCode)}?redirect=%2Fcollections%2Fall`
+            : undefined,
           message: result.message,
         });
       }
@@ -228,6 +246,9 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
           textResponse,
         });
         const approved = result.status === "approved" && "progress" in result && "pointsAwarded" in result;
+        const { autoIssueRewardIfEligible } = await import("../services/reward.server");
+        const reward = approved && shopDomain ? await autoIssueRewardIfEligible(campaign.id, customerId, shopDomain) : null;
+
         return json({
           success: true,
           outcome: approved
@@ -242,6 +263,12 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
             status: result.progress.status,
             eligibleAt: result.progress.eligibleAt?.toISOString() || null,
           } : undefined,
+          prizeLabel: reward ? `${reward.rewardValue}% OFF` : undefined,
+          discountPercent: reward?.rewardValue,
+          discountCode: reward?.discountCode,
+          useNowUrl: reward?.discountCode
+            ? `https://aghoristore.com/discount/${encodeURIComponent(reward.discountCode)}?redirect=%2Fcollections%2Fall`
+            : undefined,
           message: result.message,
         });
       }

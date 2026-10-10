@@ -95,8 +95,40 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
     }
     const levelId = String(form.get("levelId") || "");
     const activityType = String(form.get("activityType") || "");
-    if (!levelId || !["memory_game", "movie_guess", "audio_guess"].includes(activityType)) {
+    if (!levelId || !["memory_game", "movie_guess", "audio_guess", "purchase_check"].includes(activityType)) {
       return json({ success: false, error: "Invalid game completion request." }, 400);
+    }
+
+    if (activityType === "purchase_check") {
+      if (!shopDomain) {
+        return json({ success: false, error: "Cannot verify purchases outside a Shopify context." }, 400);
+      }
+      const { checkAndRecordRecentOrders } = await import("../services/purchase.server");
+      const verified = await checkAndRecordRecentOrders(shopDomain, customerId, campaign.id);
+      if (!verified) {
+        return json({ success: false, error: "We could not find an eligible paid order. If you just ordered, it may take a minute to process." });
+      }
+      // If verified, it will have created the point transaction.
+      // We can fetch the updated progress.
+      const prisma = (await import("../db.server")).default;
+      const progress = await prisma.customerProgress.findUnique({
+        where: { campaignId_shopifyCustomerId: { campaignId: campaign.id, shopifyCustomerId: customerId } },
+      });
+      const level = await prisma.level.findUnique({ where: { id: levelId } });
+      return json({
+        success: true,
+        outcome: "points_awarded",
+        pointsAwarded: level?.points || 0,
+        completedLevelId: levelId,
+        completedLevelNumber: 9,
+        progressSummary: progress ? {
+          totalPoints: progress.totalPoints,
+          currentLevel: progress.currentLevel,
+          status: progress.status,
+          eligibleAt: progress.eligibleAt?.toISOString() || null,
+        } : undefined,
+        message: "Purchase verified successfully! Points awarded.",
+      });
     }
 
     if (activityType === "movie_guess") {
@@ -137,6 +169,9 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
     }
     if (result.levelNumber === 8) await tryCompleteReadyPurchaseForCustomer(campaign.id, customerId);
 
+    const { autoIssueRewardIfEligible } = await import("../services/reward.server");
+    const reward = shopDomain ? await autoIssueRewardIfEligible(campaign.id, customerId, shopDomain) : null;
+
     return json({
       success: true,
       isCorrect: ["movie_guess", "audio_guess"].includes(activityType) ? true : undefined,
@@ -150,6 +185,9 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
         status: result.progress.status,
         eligibleAt: result.progress.eligibleAt?.toISOString() || null,
       },
+      prizeLabel: reward ? `${reward.rewardValue}% OFF` : undefined,
+      discountPercent: reward?.rewardValue,
+      discountCode: reward?.discountCode,
       message: `Challenge complete! +${result.pointsAwarded} points added.`,
     });
   } catch (error) {

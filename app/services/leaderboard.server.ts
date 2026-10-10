@@ -161,6 +161,7 @@ export async function getAdminLeaderboard({
     participants: participants.map((p, index) => ({
       rank: (page - 1) * limit + index + 1,
       id: p.id,
+      displayName: p.displayName,
       shopifyCustomerId: p.shopifyCustomerId,
       totalPoints: p.totalPoints,
       currentLevel: p.currentLevel,

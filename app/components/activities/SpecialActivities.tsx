@@ -334,6 +334,15 @@ export function SpecialActivity({
       <p>{String(config.instructions || "Complete an eligible purchase. Points are added after Shopify confirms payment.")}</p>
       {storefrontUrl && <a href={storefrontUrl} style={{ ...buttonStyle, textAlign: "center", textDecoration: "none" }}>Continue shopping</a>}
       <p style={{ color: "#64748b", fontSize: 12 }}>Your {points} points will appear here after the paid order is verified.</p>
+      <button 
+        type="button" 
+        onClick={() => onComplete("purchase_check")} 
+        style={{ ...buttonStyle, background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.3)" }}
+        disabled={isSubmitting}
+      >
+        {isSubmitting ? "Checking past orders…" : "Refresh & Check Past Orders"}
+      </button>
+      {error && <p role="alert" style={{ color: "#fecaca", fontSize: 13, margin: 0, textAlign: "center" }}>{error}</p>}
     </div>;
   }
 

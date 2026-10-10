@@ -1081,8 +1081,8 @@ export default function CustomerCampaignPage() {
   useEffect(() => {
     if (!isAuthenticated) return;
     void fetchLiveUpdates();
-
-
+    const intervalId = setInterval(fetchLiveUpdates, 10000);
+    return () => clearInterval(intervalId);
   }, [fetchLiveUpdates, isAuthenticated]);
 
   useEffect(() => {
@@ -1720,13 +1720,19 @@ export default function CustomerCampaignPage() {
               <span>{isLive ? "Live" : "Reconnecting"}</span>
             </div>
 
-            <div className="user-greeting-pill">
-              <span>
-                {isAuthenticated
-                  ? `Welcome, ${initialData.progress.displayName || "Player"}`
-                  : "Welcome, Festive Guest"}
-              </span>
-              <span style={{ fontSize: "10px", color: "#fbbf24" }}>▾</span>
+            <div className="user-greeting-pill" style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "2px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <span>
+                  {isAuthenticated
+                    ? `Welcome, ${initialData.progress.displayName || "Player"}`
+                    : "Welcome, Festive Guest"}
+                </span>
+              </div>
+              {isAuthenticated && initialData.customerIdentifier && (
+                <span style={{ fontSize: "10px", color: "rgba(255, 255, 255, 0.7)", fontWeight: "normal", letterSpacing: "0.5px" }}>
+                  {initialData.customerIdentifier}
+                </span>
+              )}
             </div>
 
           </div>
@@ -2000,8 +2006,23 @@ export default function CustomerCampaignPage() {
               ✕
             </button>
 
-            <div className="festive-modal-content" style={{ display: "flex", flexDirection: "column", maxHeight: "85vh" }}>
-            <div className="festive-modal-heading" style={{ flexShrink: 0 }}>
+            <div className={`festive-modal-content ${activeLevelModal.activityType === 'quiz' ? 'festive-modal-content--quiz-mode' : ''}`}>
+            <style>{`
+              .festive-modal-content--quiz-mode {
+                display: flex;
+                flex-direction: column;
+                overflow: hidden !important;
+                padding-bottom: 24px !important;
+              }
+              .festive-quiz-scroll-container {
+                flex: 1;
+                min-height: 0;
+                overflow-y: auto;
+                margin-top: 16px;
+                padding-bottom: max(32px, env(safe-area-inset-bottom));
+              }
+            `}</style>
+            <div className="festive-modal-heading" style={activeLevelModal.activityType === 'quiz' ? { flexShrink: 0 } : {}}>
               <span
                 className="challenge-reward-badge"
                 style={{
@@ -2045,8 +2066,9 @@ export default function CustomerCampaignPage() {
               )}
             </div>
 
-            <div style={{ flex: 1, minHeight: 0, overflowY: "auto", display: "flex", flexDirection: "column" }}>
-              {activeLevelModal.activityType === "quiz" && (
+            {/* Render Resolved Activity */}
+            {activeLevelModal.activityType === "quiz" && (
+              <div className="festive-quiz-scroll-container">
                 <QuizActivity
                   levelId={activeLevelModal.id}
                   points={activeLevelModal.points}
@@ -2055,76 +2077,76 @@ export default function CustomerCampaignPage() {
                   isSubmitting={isQuizSubmitting}
                   error={quizError}
                 />
-              )}
+              </div>
+            )}
 
-              {activeLevelModal.activityType === "photo_upload" && (
-                <PhotoUploadActivity
-                  levelId={activeLevelModal.id}
-                  config={(activeLevelModal.config as PhotoConfig) || {}}
-                  onSubmit={handlePhotoSubmit}
-                  isSubmitting={isSubmitting || isPhotoUploading}
-                  error={photoUploadError || actionData?.error}
-                />
-              )}
+            {activeLevelModal.activityType === "photo_upload" && (
+              <PhotoUploadActivity
+                levelId={activeLevelModal.id}
+                config={(activeLevelModal.config as PhotoConfig) || {}}
+                onSubmit={handlePhotoSubmit}
+                isSubmitting={isSubmitting || isPhotoUploading}
+                error={photoUploadError || actionData?.error}
+              />
+            )}
 
-              {activeLevelModal.activityType === "text_submission" && (
-                <TextSubmissionActivity
-                  levelId={activeLevelModal.id}
-                  config={(activeLevelModal.config as TextConfig) || {}}
-                  onSubmit={handleTextSubmit}
-                  isSubmitting={isTextSubmitting}
-                  error={textError}
-                  winnerAnnouncements={initialData.winnerAnnouncements}
-                />
-              )}
+            {activeLevelModal.activityType === "text_submission" && (
+              <TextSubmissionActivity
+                levelId={activeLevelModal.id}
+                config={(activeLevelModal.config as TextConfig) || {}}
+                onSubmit={handleTextSubmit}
+                isSubmitting={isTextSubmitting}
+                error={textError}
+                winnerAnnouncements={initialData.winnerAnnouncements}
+              />
+            )}
 
-              {activeLevelModal.activityType === "final_submission" && (
-                <FinalSubmissionActivity
-                  levelId={activeLevelModal.id}
-                  points={activeLevelModal.points}
-                  config={(activeLevelModal.config as FinalConfig) || {}}
-                  onSubmit={handleFinalSubmit}
-                  isSubmitting={isSubmitting}
-                  error={actionData?.error}
-                />
-              )}
+            {activeLevelModal.activityType === "final_submission" && (
+              <FinalSubmissionActivity
+                levelId={activeLevelModal.id}
+                points={activeLevelModal.points}
+                config={(activeLevelModal.config as FinalConfig) || {}}
+                onSubmit={handleFinalSubmit}
+                isSubmitting={isSubmitting}
+                error={actionData?.error}
+              />
+            )}
 
-              {["spin_wheel", "treasure_hunt", "memory_game", "movie_guess", "audio_guess", "purchase"].includes(activeLevelModal.activityType) && (
-                <SpecialActivity
-                  activityType={activeLevelModal.activityType}
-                  levelNumber={activeLevelModal.levelNumber}
-                  campaignSlug={initialData.campaign.slug}
-                  points={activeLevelModal.points}
-                  config={(activeLevelModal.config as Record<string, unknown>) || {}}
-                  onComplete={handleSpecialActivity}
-                  onPrepareSpin={handlePrepareSpin}
-                  spinPrize={spinPrize}
-                  attemptsRemaining={activeLevelModal.activityType === "movie_guess"
-                    ? (movieGuessFeedback?.levelId === activeLevelModal.id
-                      ? movieGuessFeedback.attemptsRemaining
-                      : Math.max(0, 3 - (activeLevelModal.movieGuessAttemptsUsed || 0)))
-                    : undefined}
-                  isSubmitting={activeLevelModal.activityType === "memory_game" || activeLevelModal.activityType === "movie_guess" || activeLevelModal.activityType === "audio_guess"
-                    ? isSpecialActivitySubmitting
-                    : isSubmitting || activityFetcher.state !== "idle" || isSpinSubmitting}
-                  error={activeLevelModal.activityType === "spin_wheel"
-                    ? spinError
-                    : activeLevelModal.activityType === "memory_game"
-                      ? specialActivityError
-                      : activityFetcher.data && "error" in activityFetcher.data ? activityFetcher.data.error : actionData?.error}
-                  answerFeedback={(activeLevelModal.activityType === "movie_guess" || activeLevelModal.activityType === "audio_guess") && movieGuessFeedback?.levelId === activeLevelModal.id
-                    ? { correct: movieGuessFeedback.correct, message: movieGuessFeedback.message }
-                    : undefined}
-                  storefrontUrl={storefrontUrl}
-                />
-              )}
+            {["spin_wheel", "treasure_hunt", "memory_game", "movie_guess", "audio_guess", "purchase"].includes(activeLevelModal.activityType) && (
+              <SpecialActivity
+                activityType={activeLevelModal.activityType}
+                levelNumber={activeLevelModal.levelNumber}
+                campaignSlug={initialData.campaign.slug}
+                points={activeLevelModal.points}
+                config={(activeLevelModal.config as Record<string, unknown>) || {}}
+                onComplete={handleSpecialActivity}
+                onPrepareSpin={handlePrepareSpin}
+                spinPrize={spinPrize}
+                attemptsRemaining={activeLevelModal.activityType === "movie_guess"
+                  ? (movieGuessFeedback?.levelId === activeLevelModal.id
+                    ? movieGuessFeedback.attemptsRemaining
+                    : Math.max(0, 3 - (activeLevelModal.movieGuessAttemptsUsed || 0)))
+                  : undefined}
+                isSubmitting={activeLevelModal.activityType === "memory_game" || activeLevelModal.activityType === "movie_guess" || activeLevelModal.activityType === "audio_guess"
+                  ? isSpecialActivitySubmitting
+                  : isSubmitting || activityFetcher.state !== "idle" || isSpinSubmitting}
+                error={activeLevelModal.activityType === "spin_wheel"
+                  ? spinError
+                  : activeLevelModal.activityType === "memory_game"
+                    ? specialActivityError
+                    : activityFetcher.data && "error" in activityFetcher.data ? activityFetcher.data.error : actionData?.error}
+                answerFeedback={(activeLevelModal.activityType === "movie_guess" || activeLevelModal.activityType === "audio_guess") && movieGuessFeedback?.levelId === activeLevelModal.id
+                  ? { correct: movieGuessFeedback.correct, message: movieGuessFeedback.message }
+                  : undefined}
+                storefrontUrl={storefrontUrl}
+              />
+            )}
 
-              {!new Set(["quiz", "photo_upload", "text_submission", "final_submission", "spin_wheel", "treasure_hunt", "memory_game", "movie_guess", "audio_guess", "purchase"]).has(activeLevelModal.activityType) && (
-                <p role="status" style={{ textAlign: "center", padding: "20px", color: "#7c2d12" }}>
-                  This saved challenge type is no longer supported. Please contact the store team to update this level.
-                </p>
-              )}
-            </div>
+            {!new Set(["quiz", "photo_upload", "text_submission", "final_submission", "spin_wheel", "treasure_hunt", "memory_game", "movie_guess", "audio_guess", "purchase"]).has(activeLevelModal.activityType) && (
+              <p role="status" style={{ textAlign: "center", padding: "20px", color: "#7c2d12" }}>
+                This saved challenge type is no longer supported. Please contact the store team to update this level.
+              </p>
+            )}
             </div>
           </div>
         </div>,
@@ -2132,13 +2154,21 @@ export default function CustomerCampaignPage() {
       )}
 
       {submissionFeedback && (
-        <div className="festive-modal-overlay" role="presentation">
+        <div className="festive-modal-overlay" role="presentation" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <section
             className={`festive-modal-card festive-modal-card--${submissionFeedback.outcome}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="submission-feedback-title"
-            style={{ textAlign: "center", maxWidth: "440px" }}
+            style={{ 
+              textAlign: "center", 
+              maxWidth: "440px", 
+              background: "radial-gradient(circle at 50% 0%, #1e1b4b 0%, #020617 80%)",
+              border: "1px solid rgba(251, 191, 36, 0.4)",
+              boxShadow: "0 20px 60px -10px rgba(0, 0, 0, 0.8), 0 0 30px rgba(251, 191, 36, 0.15)",
+              borderRadius: "24px",
+              padding: "32px 24px"
+            }}
           >
             <button
               type="button"
@@ -2146,44 +2176,50 @@ export default function CustomerCampaignPage() {
               onClick={() => setSubmissionFeedback(null)}
               title="Close"
               aria-label="Close submission confirmation"
+              style={{ position: 'absolute', top: 16, right: 16, background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', width: 32, height: 32, color: '#fff', cursor: 'pointer' }}
             >
               ✕
             </button>
-            <div style={{ fontSize: "42px", margin: "8px 0 12px" }} aria-hidden="true">
+            <div style={{ fontSize: "52px", margin: "0 0 16px" }} aria-hidden="true">
               {submissionFeedback.outcome === "pending_review" ? "⏳" : "🎉"}
             </div>
             <h2
               id="submission-feedback-title"
-              style={{ margin: "0 0 10px", color: "#fef08a", fontFamily: "var(--font-serif)" }}
+              style={{ margin: "0 0 8px", color: "#fef08a", fontSize: "28px", fontWeight: 900, fontFamily: "var(--font-serif)" }}
             >
-              {submissionFeedback.prizeLabel ? "You got this offer!" : submissionFeedback.outcome === "feedback_submitted" ? "Feedback saved" : submissionFeedback.outcome === "points_awarded" ? "Points earned!" : "Submission received"}
+              {submissionFeedback.prizeLabel || submissionFeedback.discountPercent ? "You got this offer!" : submissionFeedback.outcome === "feedback_submitted" ? "Feedback saved" : submissionFeedback.outcome === "points_awarded" ? "Points earned!" : "Submission received"}
             </h2>
             {submissionFeedback.outcome === "points_awarded" ? (
               <>
-                <p style={{ color: "#d1fae5", margin: "0 0 8px" }}>
+                <p style={{ color: "#e2e8f0", fontSize: "15px", margin: "0 0 12px" }}>
                   {submissionFeedback.offerMessage || submissionFeedback.message || (submissionFeedback.prizeLabel ? `Congratulations! You won ${submissionFeedback.prizeLabel}.` : "Your challenge is complete!")}
                 </p>
-                <div style={{ color: "#fbbf24", fontSize: "32px", fontWeight: 900, marginBottom: "10px" }}>
-                  +{submissionFeedback.quizPointsTotal ?? submissionFeedback.pointsAwarded ?? 0} points{submissionFeedback.quizPointsTotal != null ? " for this quiz" : ""}
+                <div style={{ color: "#fbbf24", fontSize: "40px", fontWeight: 900, marginBottom: "20px", textShadow: "0 2px 10px rgba(251, 191, 36, 0.3)" }}>
+                  +{submissionFeedback.quizPointsTotal ?? submissionFeedback.pointsAwarded ?? 0} points
                 </div>
                 {submissionFeedback.discountCode ? (
-                  <div style={{ display: "grid", gap: 10, margin: "0 0 18px" }}>
-                    <div style={{ color: "#ffe7a5", fontSize: 12, fontWeight: 800, textTransform: "uppercase" }}>
-                      Your personal {submissionFeedback.discountPercent}% discount code
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16, margin: "0 0 8px" }}>
+                    <div style={{ width: "100%", padding: "16px", border: "2px dashed rgba(251, 191, 36, 0.5)", borderRadius: 16, background: "rgba(251, 191, 36, 0.05)", position: "relative" }}>
+                      <div style={{ color: "#fbbf24", fontSize: 13, fontWeight: 800, textTransform: "uppercase", marginBottom: 8, letterSpacing: 1 }}>
+                        Your {submissionFeedback.discountPercent}% OFF Code
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12 }}>
+                        <code id="reward-code" style={{ color: "#ffffff", fontSize: 28, fontWeight: 900, letterSpacing: 2 }}>{submissionFeedback.discountCode}</code>
+                        <button type="button" aria-label="Copy code" onClick={() => navigator.clipboard.writeText(submissionFeedback.discountCode || "")} style={{ background: "rgba(255,255,255,0.1)", border: "none", color: "#fff", width: 36, height: 36, borderRadius: "50%", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                          <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                        </button>
+                      </div>
                     </div>
-                    <code style={{ padding: "11px 14px", border: "1px dashed #fbbf24", borderRadius: 10, color: "#fff", fontSize: 20, letterSpacing: 2, background: "#210f18" }}>{submissionFeedback.discountCode}</code>
-                    <div style={{ maxWidth: 340, color: "#fff4ce", fontSize: 14, lineHeight: 1.5 }}>Copy this code and enter it at checkout to apply your offer. It is valid for one use.</div>
-                    <a href={submissionFeedback.useNowUrl} target="_top" rel="noreferrer" style={{ padding: "12px 18px", borderRadius: 12, background: "linear-gradient(135deg,#8d101e,#bc7a1c)", border: "1px solid #e8bb5f", color: "#fff4ce", fontWeight: 900, textDecoration: "none" }}>Shop now — apply my code</a>
-                    <a href="https://aghoristore.com" target="_top" rel="noreferrer" style={{ color: "#ffe7a5", fontWeight: 800 }}>Shop now</a>
+                    <a href={submissionFeedback.useNowUrl || "https://aghoristore.com"} target="_top" rel="noreferrer" style={{ width: "100%", display: "block", padding: "14px 20px", borderRadius: 12, background: "linear-gradient(to right, #fbbf24, #d97706)", color: "#451a03", fontSize: 16, fontWeight: 900, textDecoration: "none", boxShadow: "0 4px 12px rgba(217, 119, 6, 0.3)" }}>Shop now — apply my code</a>
                   </div>
-                ) : <p style={{ color: "#cbd5e1", margin: "0 0 20px" }}>Your points have been added to your score.</p>}
+                ) : <p style={{ color: "#94a3b8", fontSize: "14px", margin: "0 0 24px" }}>Your points have been added to your score.</p>}
               </>
             ) : (
               <>
-                <p style={{ color: "#d1fae5", lineHeight: 1.6, margin: "0 0 8px" }}>
+                <p style={{ color: "#e2e8f0", fontSize: "16px", lineHeight: 1.6, margin: "0 0 12px" }}>
                   {submissionFeedback.message}
                 </p>
-                <p style={{ color: "#cbd5e1", lineHeight: 1.6, margin: "0 0 22px" }}>
+                <p style={{ color: "#94a3b8", fontSize: "14px", lineHeight: 1.6, margin: "0 0 24px" }}>
                   {submissionFeedback.outcome === "feedback_submitted" ? "No points are awarded for Level 10 feedback." : "Points will be added if your entry is approved."}
                 </p>
               </>
@@ -2192,13 +2228,16 @@ export default function CustomerCampaignPage() {
               type="button"
               onClick={() => setSubmissionFeedback(null)}
               style={{
-                padding: "12px 28px",
+                width: "100%",
+                padding: "14px 20px",
                 borderRadius: "12px",
-                border: "1px solid #fbbf24",
-                background: "linear-gradient(135deg, #d97706 0%, #b45309 100%)",
-                color: "#fff",
-                fontWeight: 800,
+                border: "1px solid rgba(255,255,255,0.2)",
+                background: "rgba(255,255,255,0.05)",
+                color: "#e2e8f0",
+                fontSize: 15,
+                fontWeight: 700,
                 cursor: "pointer",
+                transition: "background 0.2s"
               }}
             >
               {submissionFeedback.outcome === "points_awarded" ? "Got it — level complete" : "Continue"}

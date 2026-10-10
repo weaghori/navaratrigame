@@ -104,12 +104,14 @@ async function createShopifyDiscountCode({
   title,
   code,
   percentage,
+  customerId,
   isTestRunner,
 }: {
   adminGraphqlClient?: IssueRewardOptions["adminGraphqlClient"];
   title: string;
   code: string;
   percentage: number;
+  customerId?: string;
   isTestRunner?: boolean;
 }): Promise<{ success: boolean; discountId?: string; error?: string }> {
   if (!adminGraphqlClient) {
@@ -166,9 +168,15 @@ async function createShopifyDiscountCode({
             all: true,
           },
         },
-        customerSelection: {
-          all: true,
-        },
+        customerSelection: customerId
+          ? {
+              customers: {
+                add: [customerId.startsWith("gid://shopify/Customer/") ? customerId : `gid://shopify/Customer/${customerId}`],
+              },
+            }
+          : {
+              all: true,
+            },
       },
     };
 
@@ -283,6 +291,7 @@ export async function issueCustomerReward(options: IssueRewardOptions) {
         title,
         code: discountCode,
         percentage,
+        customerId: progress.shopifyCustomerId,
         isTestRunner,
       });
 
@@ -386,6 +395,44 @@ export async function issueCustomerReward(options: IssueRewardOptions) {
     discountCode: result.discountCode,
     issuedBy: result.issuedBy,
   };
+}
+
+/**
+ * Automatically issue a reward if the customer has reached the required points.
+ */
+export async function autoIssueRewardIfEligible(campaignId: string, shopifyCustomerId: string, shopDomain: string) {
+  try {
+    const progress = await prisma.customerProgress.findUnique({
+      where: { campaignId_shopifyCustomerId: { campaignId, shopifyCustomerId } },
+      include: { campaign: true, rewards: true },
+    });
+    if (!progress) return null;
+
+    const maxPoints = progress.campaign.maxPoints || 1000;
+    const isEligible = progress.totalPoints >= maxPoints || progress.status === "eligible" || progress.status === "completed" || progress.status === "winner";
+    if (!isEligible) return null;
+
+    const existingIssued = progress.rewards.find(
+      (r) => !r.rewardType.startsWith("spin_discount") && (r.status === "issued" || r.status === "pending"),
+    );
+    if (existingIssued) return existingIssued;
+
+    const { unauthenticated } = await import("../shopify.server");
+    const { admin } = await unauthenticated.admin(shopDomain);
+    
+    const result = await issueCustomerReward({
+      campaignId,
+      customerProgressId: progress.id,
+      rewardType: "discount",
+      percentage: 25, // Assuming 25% for the final reward
+      adminUser: "System Auto-Reward",
+      adminGraphqlClient: admin,
+    });
+    return result.success ? result.reward : null;
+  } catch (error) {
+    console.error("Auto-issue reward failed:", error);
+    return null;
+  }
 }
 
 /**

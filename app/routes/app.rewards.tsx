@@ -302,7 +302,7 @@ export default function RewardsPage() {
               >
                 <div>
                   <div style={{ fontWeight: 600, color: "#111827", fontSize: "13px" }}>
-                    {candidate.shopifyCustomerId}
+                    {candidate.displayName || candidate.shopifyCustomerId}
                     {candidate.winner && (
                       <span style={{ marginLeft: "8px", background: "#f59e0b", color: "#ffffff", fontSize: "10px", fontWeight: 700, padding: "2px 6px", borderRadius: "8px" }}>
                         OFFICIAL WINNER #{candidate.winner.rank}
@@ -403,7 +403,7 @@ export default function RewardsPage() {
                     <tr key={r.id} style={{ borderBottom: "1px solid #f3f4f6" }}>
                       <td style={{ padding: "14px 16px" }}>
                         <div style={{ fontWeight: 600, color: "#111827" }}>
-                          {r.shopifyCustomerId}
+                          {r.customerProgress.displayName || r.shopifyCustomerId}
                         </div>
                         {r.customerProgress.winner && (
                           <span style={{ fontSize: "11px", color: "#d97706", fontWeight: 700 }}>
@@ -512,6 +512,7 @@ export default function RewardsPage() {
             </div>
 
             <div style={{ background: "#f9fafb", padding: "12px 16px", borderRadius: "8px", border: "1px solid #e5e7eb", fontSize: "13px", marginBottom: "16px" }}>
+              <div><strong>Customer Name:</strong> <code>{selectedCandidate.displayName || selectedCandidate.shopifyCustomerId}</code></div>
               <div><strong>Customer ID:</strong> <code>{selectedCandidate.shopifyCustomerId}</code></div>
               <div style={{ marginTop: "4px" }}><strong>Total Points:</strong> {selectedCandidate.totalPoints} pts</div>
               <div style={{ marginTop: "4px" }}><strong>Validity:</strong> 30 Days from issuance</div>
