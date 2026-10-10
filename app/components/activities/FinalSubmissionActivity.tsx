@@ -125,21 +125,23 @@ export function FinalSubmissionActivity({
           >
             Final Navratri Greeting & Completion Note:
           </label>
-          <textarea
-            id="finale_text"
-            rows={3}
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            placeholder="Share your wishes as you complete the Navratri Challenge..."
-            style={{
-              width: "100%",
-              padding: "10px",
-              borderRadius: "8px",
-              border: isValid ? "1.5px solid #cbd5e1" : "1.5px solid #f87171",
-              fontSize: "14px",
-              boxSizing: "border-box",
-            }}
-          />
+            <textarea
+              id="finale_text"
+              rows={3}
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              placeholder="Share your wishes as you complete the Navratri Challenge..."
+              style={{
+                width: "100%",
+                padding: "10px",
+                borderRadius: "8px",
+                border: isValid ? "1.5px solid rgba(255, 255, 255, 0.4)" : "1.5px solid #f87171",
+                background: "rgba(0, 0, 0, 0.2)",
+                color: "#fff",
+                fontSize: "14px",
+                boxSizing: "border-box",
+              }}
+            />
           <div style={{ fontSize: "12px", color: isValid ? "#64748b" : "#dc2626", marginTop: "2px" }}>
             {isValid ? `${text.trim().length} chars` : `Minimum ${minChars} characters required`}
           </div>

@@ -228,8 +228,8 @@ export function SpecialActivity({
                 }}
               >
                 <div className="memory-card-inner">
-                  <div className="memory-card-hidden" style={{ padding: 0, backgroundImage: cardImage ? `url(${cardImage})` : 'none', backgroundSize: "cover", backgroundPosition: "center", borderRadius: "12px", border: "2px solid rgba(255,255,255,0.2)", background: "linear-gradient(135deg, #ea580c, #7c2d12)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 6px rgba(0,0,0,0.3)" }}>
-                    <span style={{ fontSize: "24px", opacity: 0.8 }}>🪔</span>
+                  <div className="memory-card-hidden" style={{ padding: 0, background: cardImage ? `url(${cardImage}) center/cover` : "linear-gradient(135deg, #ea580c, #7c2d12)", borderRadius: "12px", border: "2px solid rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 6px rgba(0,0,0,0.3)" }}>
+                    {!cardImage && <span style={{ fontSize: "24px", opacity: 0.8 }}>🪔</span>}
                   </div>
                   <div className="memory-card-revealed" style={imageFace ? { padding: 0, backgroundImage: `url(${face})`, backgroundSize: "cover", backgroundPosition: "center", borderRadius: "12px", border: "none" } : {}}>
                     {!imageFace && face}

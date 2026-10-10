@@ -68,7 +68,7 @@ export function TextSubmissionActivity({
                 event.currentTarget.onerror = null;
                 event.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300' fill='%23f1f5f9'%3E%3Crect width='400' height='300' fill='%23e2e8f0'/%3E%3Ctext x='50%25' y='50%25' font-size='18' text-anchor='middle' alignment-baseline='middle' font-family='sans-serif' fill='%2364748b'%3EProduct Image%3C/text%3E%3C/svg%3E";
               }}
-              style={{ display: "block", width: "100%", maxHeight: 280, objectFit: "contain", borderRadius: 10, marginBottom: 14, background: "#fff" }}
+              style={{ display: "block", width: "100%", aspectRatio: "1 / 1", maxHeight: 280, objectFit: "cover", borderRadius: 10, marginBottom: 14, background: "transparent" }}
             />
           </>
         )}
@@ -83,9 +83,9 @@ export function TextSubmissionActivity({
               width: "100%",
               padding: "12px",
               borderRadius: "10px",
-              border: isValidLength ? "1.5px solid #cbd5e1" : "1.5px solid #b7791f",
-              background: "rgba(255, 255, 255, 0.95)",
-              color: "#1e293b",
+              border: isValidLength ? "1.5px solid rgba(255, 255, 255, 0.4)" : "1.5px solid #ef4444",
+              background: "rgba(0, 0, 0, 0.2)",
+              color: "#fff",
               fontSize: "14px",
               lineHeight: "1.4",
               boxSizing: "border-box",
