@@ -82,7 +82,12 @@ export function ExpandableParticipantRow({ p, campaign }: { p: Participant; camp
                       <div style={{ marginBottom: "8px" }}><strong>Name:</strong> {fetcher.data.shopifyName || dbName || "Not available"}</div>
                       <div style={{ marginBottom: "8px" }}><strong>Email:</strong> {fetcher.data.email || "Not available"}</div>
                       <div style={{ marginBottom: "8px" }}><strong>Phone:</strong> {fetcher.data.phone || "Not available"}</div>
-                      <div style={{ marginBottom: "8px" }}><strong>Shopify ID:</strong> {p.shopifyCustomerId}</div>
+                      {fetcher.data.customerDataError && (
+                        <div style={{ color: "#ef4444", fontSize: "12px", marginTop: "8px", padding: "8px", background: "#fef2f2", borderRadius: "4px" }}>
+                          ⚠️ {fetcher.data.customerDataError}
+                        </div>
+                      )}
+                      <div style={{ marginTop: "12px", marginBottom: "8px" }}><strong>Shopify ID:</strong> {p.shopifyCustomerId}</div>
                       <div style={{ marginBottom: "8px" }}><strong>Internal ID:</strong> {p.id}</div>
                       <div style={{ marginBottom: "0" }}><strong>Joined:</strong> {new Date(p.createdAt).toLocaleString()}</div>
                     </div>

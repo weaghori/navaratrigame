@@ -27,8 +27,15 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         customerId = String(accessInfo.associated_user.id);
       }
     }
-  } catch {
-    // Standalone or local dev fallback
+  } catch (err: any) {
+    // If proxy auth fails (e.g., missing signature due to direct access), check if it's an admin previewing
+    try {
+      const { session } = await authenticate.admin(request);
+      shopDomain = session.shop;
+      customerId = url.searchParams.get("customerId") || "preview_admin_customer";
+    } catch {
+      // Standalone or local dev fallback without admin session
+    }
   }
 
   if (!shopDomain) {

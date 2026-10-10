@@ -24,6 +24,8 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   let phone = null;
   let shopifyName = null;
 
+  let customerDataError = null;
+
   try {
     const customerId = progress.shopifyCustomerId;
     const graphqlId = customerId.startsWith("gid://") ? customerId : `gid://shopify/Customer/${customerId}`;
@@ -39,14 +41,19 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
       }
     `, { variables: { id: graphqlId } });
 
-    const data = await response.json();
-    if (data.data?.customer) {
+    const data = await response.json() as any;
+    
+    if (data.errors) {
+      customerDataError = data.errors[0]?.message || "GraphQL returned errors";
+    } else if (data.data?.customer) {
       email = data.data.customer.email;
       phone = data.data.customer.phone;
       shopifyName = [data.data.customer.firstName, data.data.customer.lastName].filter(Boolean).join(" ");
+    } else {
+      customerDataError = "Customer not found in Shopify API response";
     }
-  } catch (err) {
-    // Ignore graphql fetch errors gracefully
+  } catch (err: any) {
+    customerDataError = err.message || "Failed to query Shopify Admin API. Please check access scopes (read_customers).";
   }
 
   const auditLogs = await prisma.auditEvent.findMany({
@@ -60,6 +67,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     email,
     phone,
     shopifyName,
+    customerDataError,
     auditLogs
   });
 };
