@@ -1768,7 +1768,6 @@ export default function CustomerCampaignPage() {
             </div>
 
             <div className="user-greeting-pill" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-              <img src={brandLogo} alt="Brand Logo" style={{ height: "32px", objectFit: "contain" }} />
               <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "2px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                   <span>
@@ -1811,6 +1810,7 @@ export default function CustomerCampaignPage() {
 
         {/* ================= HERO TITLE BANNER ================= */}
         <div className="nav-hero-section">
+          <img src={brandLogo} alt="Aghori Store Logo" style={{ height: "60px", objectFit: "contain", margin: "0 auto 16px auto", display: "block" }} />
           <LotusOrnament />
           <h1 className="hero-main-title">Navratri 2026</h1>
           <div className="hero-subtitle">
@@ -1879,7 +1879,10 @@ export default function CustomerCampaignPage() {
           </div>
         )}
 
-        {/* ================= POINTS / HUD CARD ================= */}
+        {/* ================= PROTECTED GAME CONTENT ================= */}
+        {isAuthenticated && (
+          <>
+            {/* ================= POINTS / HUD CARD ================= */}
         <div className="points-hud-wrapper">
           <div className="points-hud-card">
             {/* Left: Your Points */}
@@ -1901,9 +1904,6 @@ export default function CustomerCampaignPage() {
                 <div className="hud-progress-bar-fill" style={{ width: `${percentage}%` }} />
               </div>
               <div className="hud-progress-percent">{percentage}%</div>
-              <div style={{ fontSize: "11px", color: "#cbd5e1", marginTop: "8px", textAlign: "center", lineHeight: 1.3 }}>
-                Unlock each day, complete the challenge, earn points and win amazing rewards!
-              </div>
             </div>
 
             {/* Right: Reward */}
@@ -2028,6 +2028,8 @@ export default function CustomerCampaignPage() {
           <span>✦ Participate</span>
           <span>✦ Win ✦</span>
         </div>
+          </>
+        )}
 
         {/* Leaderboard and points feed */}
         {isAuthenticated && (
@@ -2542,43 +2544,45 @@ export default function CustomerCampaignPage() {
             )}
           </div>
 
-          <div className="final-level-ornament">
-             <KalashArtwork />
-          </div>
+          <div className="final-level-content-wrapper" style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", textAlign: "center", width: "100%", padding: "16px 0" }}>
+            <div className="final-level-ornament">
+               <KalashArtwork />
+            </div>
 
-          <div className="active-card-body">
-            <h3 className="active-card-title final-card-title">{lvl.title}</h3>
-            <p className="active-card-desc final-card-desc">
-              {lvl.description || `Complete the final challenge and reach the reward milestone.`}
-            </p>
-          </div>
+            <div className="active-card-body" style={{ alignItems: "center", flex: "none" }}>
+              <h3 className="active-card-title final-card-title">{lvl.title}</h3>
+              <p className="active-card-desc final-card-desc">
+                {lvl.description || `Complete the final challenge and reach the reward milestone.`}
+              </p>
+            </div>
 
-          <div>
-            {isCompleted ? (
-              <button type="button" className="active-card-btn completed" disabled>
-                Feedback submitted ✓
-              </button>
-            ) : isPending ? (
-              <button type="button" className="active-card-btn" disabled style={{ background: "#fef3c7", color: "#92400e", borderColor: "#fde68a", cursor: "not-allowed" }}>
-                Under Review ⏳
-              </button>
-            ) : isRejected ? (
-              <button type="button" className="active-card-btn" onClick={(event) => { event.stopPropagation(); handleOpenLevel(lvl); }} style={{ background: "#fff7ed", color: "#9a3412", borderColor: "#fdba74" }}>
-                Update &amp; Resubmit
-              </button>
-            ) : (
-              <button
-                type="button"
-                id={`start-level-${lvl.levelNumber}-btn`}
-                className="active-card-btn final-card-btn"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleOpenLevel(lvl);
-                }}
-              >
-                Start Final Challenge ➔
-              </button>
-            )}
+            <div style={{ marginTop: "16px", width: "100%", display: "flex", justifyContent: "center" }}>
+              {isCompleted ? (
+                <button type="button" className="active-card-btn completed" disabled>
+                  Feedback submitted ✓
+                </button>
+              ) : isPending ? (
+                <button type="button" className="active-card-btn" disabled style={{ background: "#fef3c7", color: "#92400e", borderColor: "#fde68a", cursor: "not-allowed" }}>
+                  Under Review ⏳
+                </button>
+              ) : isRejected ? (
+                <button type="button" className="active-card-btn" onClick={(event) => { event.stopPropagation(); handleOpenLevel(lvl); }} style={{ background: "#fff7ed", color: "#9a3412", borderColor: "#fdba74" }}>
+                  Update &amp; Resubmit
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  id={`start-level-${lvl.levelNumber}-btn`}
+                  className="active-card-btn final-card-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleOpenLevel(lvl);
+                  }}
+                >
+                  Start Final Challenge ➔
+                </button>
+              )}
+            </div>
           </div>
 
           <ActiveCardSideDecor />
