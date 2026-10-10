@@ -996,6 +996,7 @@ export default function CustomerCampaignPage() {
   const navigation = useNavigation();
   const submit = useSubmit();
   const activityFetcher = useFetcher<typeof action>();
+  const displayNameFetcher = useFetcher<typeof action>();
   const { proxyBasePath, returnPath, storefrontUrl, isAuthenticated, loginUrl, logoutUrl, currentAvailableLevel } = initialData;
 
   // State synced in real-time
@@ -1021,7 +1022,7 @@ export default function CustomerCampaignPage() {
   const [isLive, setIsLive] = useState(true);
   
   const [showDisplayNameModal, setShowDisplayNameModal] = useState(false);
-  const [displayNameInput, setDisplayNameInput] = useState(initialData.progress.displayName || "");
+  const [displayNameInput, setDisplayNameInput] = useState(initialData.progress?.displayName || "");
   const [isDisplayNameSubmitting, setIsDisplayNameSubmitting] = useState(false);
   const liveSyncSequence = useRef(0);
 
@@ -1588,19 +1589,19 @@ export default function CustomerCampaignPage() {
     form.append("displayName", displayNameInput.trim());
     addCustomerBridge(form);
     
-    fetcher.submit(form, { method: "POST" });
-  }, [customerId, displayNameInput, fetcher]);
+    displayNameFetcher.submit(form, { method: "POST" });
+  }, [customerId, displayNameInput, displayNameFetcher]);
 
   useEffect(() => {
-    if (fetcher.state === "idle" && fetcher.data) {
-      const fd = fetcher.data as any;
+    if (displayNameFetcher.state === "idle" && displayNameFetcher.data) {
+      const fd = displayNameFetcher.data as any;
       if (fd.outcome === "display_name_set" && isDisplayNameSubmitting) {
         setIsDisplayNameSubmitting(false);
         setShowDisplayNameModal(false);
         // Let the loader reload take care of updating the display name
       }
     }
-  }, [fetcher.state, fetcher.data, isDisplayNameSubmitting]);
+  }, [displayNameFetcher.state, displayNameFetcher.data, isDisplayNameSubmitting]);
 
   const handleSpecialActivity = useCallback((activityType: string, values: Record<string, string> = {}) => {
     if (!activeLevelModal || !customerId) return;
@@ -1772,7 +1773,7 @@ export default function CustomerCampaignPage() {
                 <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                   <span>
                     {isAuthenticated
-                      ? `Welcome, ${initialData.progress.displayName || "Player"}`
+                      ? `Welcome, ${initialData.progress?.displayName || "Player"}`
                       : "Welcome, Festive Guest"}
                   </span>
                   {isAuthenticated && (
@@ -1990,11 +1991,11 @@ export default function CustomerCampaignPage() {
             }}>
               <div style={{ fontSize: "14px", color: "#94a3b8", textTransform: "uppercase", letterSpacing: "1px" }}>Your Final Rank</div>
               <div style={{ fontSize: "48px", fontWeight: 900, color: "#fbbf24" }}>#{initialData.winnerDetails.rank}</div>
-              {initialData.winnerDetails.prizeValue > 0 && (
+              {Boolean(initialData.winnerDetails.prizeValue) && (
                 <>
                   <div style={{ height: "1px", background: "rgba(255,255,255,0.1)", margin: "8px 0" }}></div>
                   <div style={{ fontSize: "14px", color: "#94a3b8", textTransform: "uppercase", letterSpacing: "1px" }}>Prize Awarded</div>
-                  <div style={{ fontSize: "24px", fontWeight: 700, color: "#34d399" }}>₹{initialData.winnerDetails.prizeValue}</div>
+                  <div style={{ fontSize: "24px", fontWeight: 700, color: "#34d399" }}>{initialData.winnerDetails.prizeValue}</div>
                 </>
               )}
             </div>
