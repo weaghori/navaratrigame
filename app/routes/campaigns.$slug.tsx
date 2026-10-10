@@ -1754,7 +1754,7 @@ export default function CustomerCampaignPage() {
           <LotusOrnament />
           <h1 className="hero-main-title">Navratri 2026</h1>
           <div className="hero-subtitle">
-            10 Challenges • 1000 Points • Exclusive Rewards
+            10 Challenges • {initialData.campaign.maxPoints} Points • Exclusive Rewards
           </div>
           <p className="hero-description">
             Unlock each day, complete the challenge, earn points and win amazing rewards!

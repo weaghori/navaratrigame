@@ -4,6 +4,7 @@ import { boundary } from "@shopify/shopify-app-react-router/server";
 import { authenticate } from "../shopify.server";
 import { getActiveCampaign } from "../services/campaign.server";
 import prisma from "../db.server";
+import { ExpandableParticipantRow } from "../components/ExpandableParticipantRow";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   await authenticate.admin(request);
@@ -179,67 +180,9 @@ export default function ParticipantsPage() {
               </tr>
             </thead>
             <tbody>
-              {participants.map((p) => {
-                const isEligible = p.totalPoints >= campaign.maxPoints || p.status === "eligible" || p.status === "completed" || p.status === "winner";
-
-                return (
-                  <tr key={p.id} style={{ borderBottom: "1px solid #f3f4f6" }}>
-                    <td style={{ padding: "14px 16px", fontWeight: "bold", color: p.calculatedRank <= 3 ? "#d97706" : "#4b5563" }}>
-                      #{p.calculatedRank}
-                    </td>
-                    <td style={{ padding: "14px 16px" }}>
-                      <div style={{ fontWeight: 600, color: "#111827" }}>
-                        {p.shopifyCustomerId.replace(/\D/g, "").slice(-6) ? `Customer ...${p.shopifyCustomerId.slice(-6)}` : p.shopifyCustomerId}
-                      </div>
-                      <span style={{ fontSize: "11px", color: "#9ca3af" }}>ID: {p.shopifyCustomerId}</span>
-                    </td>
-                    <td style={{ padding: "14px 16px" }}>
-                      <span style={{ fontSize: "14px", fontWeight: "bold", color: "#059669" }}>
-                        {p.totalPoints} pts
-                      </span>
-                      <div style={{ fontSize: "11px", color: "#9ca3af" }}>
-                        {Math.round((p.totalPoints / campaign.maxPoints) * 100)}% to goal
-                      </div>
-                    </td>
-                    <td style={{ padding: "14px 16px" }}>
-                      <span
-                        style={{
-                          background: "#e0e7ff",
-                          color: "#3730a3",
-                          padding: "2px 8px",
-                          borderRadius: "6px",
-                          fontSize: "11px",
-                          fontWeight: 700,
-                        }}
-                      >
-                        Day {p.currentLevel}
-                      </span>
-                    </td>
-                    <td style={{ padding: "14px 16px", color: "#4b5563" }}>
-                      {p._count.submissions} submissions ({p._count.pointTransactions} transactions)
-                    </td>
-                    <td style={{ padding: "14px 16px" }}>
-                      <span
-                        style={{
-                          display: "inline-block",
-                          padding: "3px 10px",
-                          borderRadius: "12px",
-                          fontSize: "11px",
-                          fontWeight: 700,
-                          background: isEligible ? "#dcfce7" : "#f3f4f6",
-                          color: isEligible ? "#166534" : "#6b7280",
-                          textTransform: "uppercase",
-                        }}
-                      >
-                        {isEligible ? "✓ Eligible" : "In Progress"}
-                      </span>
-                    </td>
-                    <td style={{ padding: "14px 16px", color: "#6b7280", fontSize: "12px" }}>
-                      {new Date(p.createdAt).toLocaleDateString()}
-                    </td>
-                  </tr>
-                );
-              })}
+              {participants.map((p) => (
+                <ExpandableParticipantRow key={p.id} p={p} campaign={campaign} />
+              ))}
             </tbody>
           </table>
         </div>
