@@ -72,8 +72,7 @@ export async function completeReadyPurchaseForCustomer(campaignId: string, shopi
   ]);
   if (!progress || !level || getCampaignTimeStatus(level.campaign) !== "ACTIVE") return false;
 
-  const [previous, existingAward, purchase] = await Promise.all([
-    prisma.level.findFirst({ where: { campaignId, levelNumber: 8 }, select: { id: true } }),
+  const [existingAward, purchase] = await Promise.all([
     prisma.pointTransaction.findFirst({
       where: { customerProgressId: progress.id, levelId: level.id },
       select: { id: true },
@@ -84,10 +83,6 @@ export async function completeReadyPurchaseForCustomer(campaignId: string, shopi
     }),
   ]);
   if (existingAward || !purchase) return false;
-  if (previous && !(await prisma.pointTransaction.findFirst({
-    where: { customerProgressId: progress.id, levelId: previous.id },
-    select: { id: true },
-  }))) return false;
 
   // A conditional claim keeps concurrent webhook and page retries idempotent.
   return prisma.$transaction(async (tx) => {
