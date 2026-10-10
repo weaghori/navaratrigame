@@ -5,7 +5,7 @@ import { useAppBridge } from "@shopify/app-bridge-react";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import { authenticate } from "../shopify.server";
 import { getActiveCampaign } from "../services/campaign.server";
-import { getTop25Calculated, finalizeTop25Winners, pickRandomWinners, addManualWinner } from "../services/winner.server";
+import { getEligibleCandidates, finalizeSelectedWinners } from "../services/winner.server";
 import prisma from "../db.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
@@ -15,15 +15,15 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   if (!campaign) {
     return {
       campaign: null,
-      candidates: [],
+      eligibleCandidates: [],
       finalizedWinners: [],
       isFinalized: false,
       adminShop: session.shop,
     };
   }
 
-  const [calcResult, finalizedWinners] = await Promise.all([
-    getTop25Calculated(campaign.id),
+  const [eligibleCandidates, finalizedWinners] = await Promise.all([
+    getEligibleCandidates(campaign.id),
     prisma.winner.findMany({
       where: { campaignId: campaign.id },
       orderBy: { rank: "asc" },
@@ -33,15 +33,13 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     }),
   ]);
 
-  const isFinalized = finalizedWinners.length > 0;
-
   return {
     campaign: {
       id: campaign.id,
       name: campaign.name,
       maxPoints: campaign.maxPoints,
     },
-    candidates: calcResult.candidates.map((c) => ({
+    eligibleCandidates: eligibleCandidates.map((c) => ({
       ...c,
       eligibleAt: c.eligibleAt ? c.eligibleAt.toISOString() : null,
       completedAt: c.completedAt ? c.completedAt.toISOString() : null,
@@ -55,7 +53,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         completedAt: w.customerProgress.completedAt ? w.customerProgress.completedAt.toISOString() : null,
       },
     })),
-    isFinalized,
+    isFinalized: finalizedWinners.length > 0,
     adminShop: session.shop,
   };
 };
@@ -73,14 +71,19 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
   if (actionType === "finalize_winners") {
     try {
-      const result = await finalizeTop25Winners({
+      const selectedIds = String(formData.get("selectedIds") || "").split(",").filter(Boolean);
+      if (!selectedIds.length) {
+        return { success: false, error: "No winners selected." };
+      }
+      const result = await finalizeSelectedWinners({
         campaignId,
+        customerProgressIds: selectedIds,
         adminUser: `Shopify Admin (${session.shop})`,
       });
 
       return {
         success: true,
-        message: `Successfully finalized ${result.finalizedCount} winners for the campaign! Records locked into official Winner table.`,
+        message: `Successfully finalized ${result.finalizedCount} winners!`,
       };
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Failed to finalize winners";
@@ -88,35 +91,17 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     }
   }
 
-  if (actionType === "pick_random") {
-    try {
-      const result = await pickRandomWinners({ campaignId, count: 5, adminUser: session.shop });
-      return { success: true, message: `Successfully picked ${result.count} random winners.` };
-    } catch (err: unknown) {
-      return { success: false, error: err instanceof Error ? err.message : "Failed to pick random winners" };
-    }
-  }
-
-  if (actionType === "add_manual_winner") {
-    const shopifyCustomerId = String(formData.get("shopifyCustomerId") || "").trim();
-    if (!shopifyCustomerId) return { success: false, error: "Customer ID is required." };
-    try {
-      await addManualWinner({ campaignId, shopifyCustomerId, adminUser: session.shop });
-      return { success: true, message: `Successfully added ${shopifyCustomerId} as a winner.` };
-    } catch (err: unknown) {
-      return { success: false, error: err instanceof Error ? err.message : "Failed to add manual winner" };
-    }
-  }
-
   return { success: false, error: "Unknown action." };
 };
 
 export default function WinnersPage() {
-  const { campaign, candidates, finalizedWinners, isFinalized } = useLoaderData<typeof loader>();
+  const { campaign, eligibleCandidates, finalizedWinners, isFinalized } = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const navigation = useNavigation();
   const shopify = useAppBridge();
 
+  const [numWinners, setNumWinners] = useState(1);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const isSubmitting = navigation.state === "submitting";
 
@@ -124,14 +109,29 @@ export default function WinnersPage() {
     if (actionData?.success) {
       shopify.toast.show(actionData.message || "Winners finalized successfully!");
       setShowConfirmModal(false);
+      setSelectedIds([]);
     } else if (actionData?.error) {
       shopify.toast.show(actionData.error, { isError: true });
     }
   }, [actionData, shopify]);
 
+  const handleRandomSelect = () => {
+    if (eligibleCandidates.length === 0) {
+      shopify.toast.show("No eligible candidates available.", { isError: true });
+      return;
+    }
+    const shuffled = [...eligibleCandidates].sort(() => 0.5 - Math.random());
+    const selected = shuffled.slice(0, numWinners).map(c => c.id);
+    setSelectedIds(selected);
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  };
+
   if (!campaign) {
     return (
-      <s-page heading="Top 25 Winners">
+      <s-page heading="Winners Management">
         <s-section heading="No Active Campaign">
           <div style={{ padding: "32px", textAlign: "center", background: "#ffffff", borderRadius: "10px", border: "1px solid #e1e3e5" }}>
             <div style={{ fontSize: "16px", fontWeight: "bold", color: "#202223" }}>No active campaign found</div>
@@ -142,266 +142,116 @@ export default function WinnersPage() {
   }
 
   return (
-    <s-page heading="Top 25 Winners Management">
-      {/* Header Banner */}
-      <div
-        style={{
-          background: "#ffffff",
-          borderRadius: "10px",
-          padding: "20px 24px",
-          border: "1px solid #e1e3e5",
-          marginBottom: "20px",
-          boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
-        }}
-      >
+    <s-page heading="Winners Management">
+      <div style={{ background: "#ffffff", borderRadius: "10px", padding: "20px 24px", border: "1px solid #e1e3e5", marginBottom: "20px", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px" }}>
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
               <span style={{ fontSize: "22px" }}>🏆</span>
-              <span style={{ fontSize: "20px", fontWeight: "bold", color: "#202223" }}>Top 25 Winners</span>
-              <span
-                style={{
-                  background: isFinalized ? "#dcfce7" : "#fef3c7",
-                  color: isFinalized ? "#166534" : "#92400e",
-                  fontSize: "12px",
-                  fontWeight: 700,
-                  padding: "3px 10px",
-                  borderRadius: "12px",
-                  textTransform: "uppercase",
-                }}
-              >
-                {isFinalized ? "✓ FINALIZED" : "⚡ LIVE CANDIDATES"}
-              </span>
+              <span style={{ fontSize: "20px", fontWeight: "bold", color: "#202223" }}>Select Winners</span>
             </div>
             <div style={{ fontSize: "13px", color: "#6d7175", marginTop: "4px" }}>
-              {isFinalized
-                ? "Official winners have been locked in database. Proceed to issue grand rewards."
-                : "Real-time ranking of top participants based on total points and completion timestamps."}
+              Choose winners manually or randomly from {eligibleCandidates.length} eligible participants.
             </div>
           </div>
 
-          {!isFinalized ? (
-            <div style={{ display: "flex", gap: "10px" }}>
-              <button  style={{ background: "#000", color: "#fff", padding: "10px 20px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }} onClick={() => setShowConfirmModal(true)}>
-                🔒 Finalize Top 25
-              </button>
-            </div>
-          ) : (
-            <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-              <Form method="post" onSubmit={() => shopify.toast.show("Picking random winners...")}>
-                <input type="hidden" name="campaignId" value={campaign.id} />
-                <input type="hidden" name="actionType" value="pick_random" />
-                <button type="submit" disabled={isSubmitting} style={{ background: "#4f46e5", color: "#fff", padding: "10px 20px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }}>
-                  🎲 Pick 5 Random Winners
-                </button>
-              </Form>
-
-              <Form method="post" style={{ display: "flex", gap: "6px" }}>
-                <input type="hidden" name="campaignId" value={campaign.id} />
-                <input type="hidden" name="actionType" value="add_manual_winner" />
-                <input type="text" name="shopifyCustomerId" placeholder="gid://shopify/Customer/123" required style={{ padding: "8px 12px", borderRadius: "6px", border: "1px solid #d1d5db" }} />
-                <button type="submit" disabled={isSubmitting} style={{ background: "#059669", color: "#fff", padding: "10px 20px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }}>
-                  + Add Manual Winner
-                </button>
-              </Form>
-            </div>
-          )}
+          <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+            <input 
+              type="number" 
+              min={1} 
+              max={eligibleCandidates.length || 1} 
+              value={numWinners} 
+              onChange={(e) => setNumWinners(parseInt(e.target.value) || 1)}
+              style={{ padding: "8px 12px", border: "1px solid #c9cccf", borderRadius: "4px", width: "80px" }}
+            />
+            <button style={{ background: "#f4f6f8", color: "#202223", border: "1px solid #c9cccf", padding: "8px 16px", borderRadius: "4px", cursor: "pointer", fontWeight: 600 }} onClick={handleRandomSelect}>
+              🎲 Pick Random
+            </button>
+            <button disabled={selectedIds.length === 0} style={{ background: selectedIds.length > 0 ? "#008060" : "#f4f6f8", color: selectedIds.length > 0 ? "#fff" : "#8c9196", border: "none", padding: "8px 16px", borderRadius: "4px", cursor: selectedIds.length > 0 ? "pointer" : "not-allowed", fontWeight: 600 }} onClick={() => setShowConfirmModal(true)}>
+              🔒 Finalize ({selectedIds.length})
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Finalization Notice Banner */}
-      {!isFinalized ? (
-        <div
-          style={{
-            background: "#fffbeb",
-            border: "1.5px solid #fde68a",
-            borderRadius: "10px",
-            padding: "16px 20px",
-            marginBottom: "20px",
-            display: "flex",
-            alignItems: "center",
-            gap: "12px",
-          }}
-        >
-          <span style={{ fontSize: "24px" }}>ℹ️</span>
-          <div>
-            <div style={{ fontSize: "14px", fontWeight: 700, color: "#92400e" }}>
-              Winner selection has not been finalized yet.
-            </div>
-            <div style={{ fontSize: "12px", color: "#b45309", marginTop: "2px" }}>
-              The table below displays live calculated candidates. Click &ldquo;Finalize Top 25 Winners&rdquo; when the campaign period ends to lock official records.
-            </div>
-          </div>
-        </div>
-      ) : (
-        <div
-          style={{
-            background: "#f0fdf4",
-            border: "1.5px solid #bbf7d0",
-            borderRadius: "10px",
-            padding: "16px 20px",
-            marginBottom: "20px",
-            display: "flex",
-            alignItems: "center",
-            gap: "12px",
-          }}
-        >
-          <span style={{ fontSize: "24px" }}>🎉</span>
-          <div>
-            <div style={{ fontSize: "14px", fontWeight: 700, color: "#166534" }}>
-              Top 25 Winners officially finalized!
-            </div>
-            <div style={{ fontSize: "12px", color: "#15803d", marginTop: "2px" }}>
-              Official records are locked in the database. Head to <strong>Rewards</strong> to generate real Shopify discount codes.
-            </div>
+      {finalizedWinners.length > 0 && (
+        <div style={{ marginBottom: "32px" }}>
+          <h2 style={{ fontSize: "18px", fontWeight: "bold", marginBottom: "12px", color: "#202223" }}>Previously Finalized Winners</h2>
+          <div style={{ background: "#ffffff", borderRadius: "10px", border: "1px solid #e1e3e5", overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
+              <thead>
+                <tr style={{ background: "#f9fafb", borderBottom: "1px solid #e1e3e5", textAlign: "left", color: "#4b5563" }}>
+                  <th style={{ padding: "12px 16px" }}>Rank</th>
+                  <th style={{ padding: "12px 16px" }}>Customer</th>
+                  <th style={{ padding: "12px 16px" }}>Display Name</th>
+                  <th style={{ padding: "12px 16px" }}>Points</th>
+                </tr>
+              </thead>
+              <tbody>
+                {finalizedWinners.map(w => (
+                  <tr key={w.id} style={{ borderBottom: "1px solid #f3f4f6" }}>
+                    <td style={{ padding: "12px 16px", fontWeight: "bold" }}>#{w.rank}</td>
+                    <td style={{ padding: "12px 16px" }}>{w.shopifyCustomerId}</td>
+                    <td style={{ padding: "12px 16px" }}>{w.customerProgress.displayName || "Unknown"}</td>
+                    <td style={{ padding: "12px 16px", color: "#059669", fontWeight: "bold" }}>{w.customerProgress.totalPoints} pts</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
 
-      {/* Table of Winners / Candidates */}
-      <div
-        style={{
-          background: "#ffffff",
-          borderRadius: "10px",
-          border: "1px solid #e1e3e5",
-          boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
-          overflowX: "auto",
-        }}
-      >
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
-          <thead>
-            <tr style={{ background: "#f9fafb", borderBottom: "1px solid #e1e3e5", textAlign: "left", color: "#4b5563", fontSize: "12px", textTransform: "uppercase" }}>
-              <th style={{ padding: "12px 16px" }}>Official Rank</th>
-              <th style={{ padding: "12px 16px" }}>Customer</th>
-              <th style={{ padding: "12px 16px" }}>Points</th>
-              <th style={{ padding: "12px 16px" }}>Progress Level</th>
-              <th style={{ padding: "12px 16px" }}>Eligibility</th>
-              <th style={{ padding: "12px 16px" }}>Reward Status</th>
-              <th style={{ padding: "12px 16px" }}>Completed At</th>
-            </tr>
-          </thead>
-          <tbody>
-            {(isFinalized ? finalizedWinners : candidates).map((row) => {
-              const rank = isFinalized ? (row as (typeof finalizedWinners)[0]).rank : (row as (typeof candidates)[0]).rank;
-              const customerId = isFinalized
-                ? (row as (typeof finalizedWinners)[0]).shopifyCustomerId
-                : (row as (typeof candidates)[0]).shopifyCustomerId;
-              const points = isFinalized
-                ? (row as (typeof finalizedWinners)[0]).customerProgress.totalPoints
-                : (row as (typeof candidates)[0]).totalPoints;
-              const currentLevel = isFinalized
-                ? (row as (typeof finalizedWinners)[0]).customerProgress.currentLevel
-                : (row as (typeof candidates)[0]).currentLevel;
-              const isEligible = points >= campaign.maxPoints;
-              const rewardAssigned = isFinalized ? (row as (typeof finalizedWinners)[0]).rewardAssigned : false;
-              const completedAt = isFinalized
-                ? (row as (typeof finalizedWinners)[0]).customerProgress.completedAt
-                : (row as (typeof candidates)[0]).completedAt;
-
-              return (
-                <tr key={"id" in row ? String(row.id) : (row as { customerProgressId: string }).customerProgressId} style={{ borderBottom: "1px solid #f3f4f6" }}>
-                  <td style={{ padding: "14px 16px", fontWeight: "bold", color: rank <= 3 ? "#d97706" : "#1f2937" }}>
-                    #{rank} {rank === 1 ? "🥇" : rank === 2 ? "🥈" : rank === 3 ? "🥉" : ""}
-                  </td>
-                  <td style={{ padding: "14px 16px" }}>
-                    <div style={{ fontWeight: 600, color: "#111827" }}>
-                      {customerId.replace(/\D/g, "").slice(-6) ? `Customer ...${customerId.slice(-6)}` : customerId}
-                    </div>
-                    <span style={{ fontSize: "11px", color: "#9ca3af" }}>ID: {customerId}</span>
-                  </td>
-                  <td style={{ padding: "14px 16px", fontWeight: "bold", color: "#059669" }}>
-                    {points} pts
-                  </td>
-                  <td style={{ padding: "14px 16px" }}>
-                    <span style={{ background: "#e0e7ff", color: "#3730a3", padding: "2px 8px", borderRadius: "6px", fontSize: "11px", fontWeight: 700 }}>
-                      Day {currentLevel}
-                    </span>
-                  </td>
-                  <td style={{ padding: "14px 16px" }}>
-                    <span
-                      style={{
-                        display: "inline-block",
-                        padding: "2px 8px",
-                        borderRadius: "10px",
-                        fontSize: "11px",
-                        fontWeight: 700,
-                        background: isEligible ? "#dcfce7" : "#fef3c7",
-                        color: isEligible ? "#166534" : "#92400e",
-                      }}
-                    >
-                      {isEligible ? "✓ Eligible (1000 pts)" : "Pending (Under 1000 pts)"}
-                    </span>
-                  </td>
-                  <td style={{ padding: "14px 16px" }}>
-                    <span
-                      style={{
-                        display: "inline-block",
-                        padding: "2px 8px",
-                        borderRadius: "10px",
-                        fontSize: "11px",
-                        fontWeight: 700,
-                        background: rewardAssigned ? "#dcfce7" : "#f3f4f6",
-                        color: rewardAssigned ? "#166534" : "#6b7280",
-                      }}
-                    >
-                      {rewardAssigned ? "✓ Reward Issued" : "Pending Issuance"}
-                    </span>
-                  </td>
-                  <td style={{ padding: "14px 16px", color: "#6b7280", fontSize: "12px" }}>
-                    {completedAt ? new Date(completedAt).toLocaleString() : "In Progress"}
-                  </td>
+      <div>
+        <h2 style={{ fontSize: "18px", fontWeight: "bold", marginBottom: "12px", color: "#202223" }}>Eligible Candidates</h2>
+        <div style={{ background: "#ffffff", borderRadius: "10px", border: "1px solid #e1e3e5", overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
+            <thead>
+              <tr style={{ background: "#f9fafb", borderBottom: "1px solid #e1e3e5", textAlign: "left", color: "#4b5563" }}>
+                <th style={{ padding: "12px 16px", width: "40px" }}>Select</th>
+                <th style={{ padding: "12px 16px" }}>Customer ID</th>
+                <th style={{ padding: "12px 16px" }}>Display Name</th>
+                <th style={{ padding: "12px 16px" }}>Points</th>
+                <th style={{ padding: "12px 16px" }}>Level</th>
+              </tr>
+            </thead>
+            <tbody>
+              {eligibleCandidates.length === 0 ? (
+                <tr>
+                  <td colSpan={5} style={{ padding: "24px", textAlign: "center", color: "#6d7175" }}>No eligible candidates available yet.</td>
                 </tr>
-              );
-            })}
-          </tbody>
-        </table>
+              ) : eligibleCandidates.map((c) => (
+                <tr key={c.id} style={{ borderBottom: "1px solid #f3f4f6", background: selectedIds.includes(c.id) ? "#f0fdf4" : "transparent" }}>
+                  <td style={{ padding: "12px 16px" }}>
+                    <input type="checkbox" checked={selectedIds.includes(c.id)} onChange={() => toggleSelect(c.id)} style={{ cursor: "pointer", width: "16px", height: "16px" }} />
+                  </td>
+                  <td style={{ padding: "12px 16px", fontWeight: 600 }}>{c.shopifyCustomerId}</td>
+                  <td style={{ padding: "12px 16px" }}>{c.displayName || "-"}</td>
+                  <td style={{ padding: "12px 16px", color: "#059669", fontWeight: "bold" }}>{c.totalPoints} pts</td>
+                  <td style={{ padding: "12px 16px" }}>{c.currentLevel}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      {/* Finalize Confirmation Modal */}
       {showConfirmModal && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: "rgba(0,0,0,0.5)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 1000,
-            padding: "20px",
-          }}
-        >
-          <div
-            style={{
-              background: "#ffffff",
-              borderRadius: "12px",
-              maxWidth: "500px",
-              width: "100%",
-              padding: "24px",
-              boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1)",
-            }}
-          >
-            <div style={{ fontSize: "18px", fontWeight: "bold", color: "#111827", marginBottom: "8px" }}>
-              Finalize Top 25 Winners?
-            </div>
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "20px" }}>
+          <div style={{ background: "#ffffff", borderRadius: "12px", maxWidth: "500px", width: "100%", padding: "24px", boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1)" }}>
+            <div style={{ fontSize: "18px", fontWeight: "bold", color: "#111827", marginBottom: "8px" }}>Finalize {selectedIds.length} Winners?</div>
             <div style={{ fontSize: "13px", color: "#4b5563", lineHeight: "1.5", marginBottom: "20px" }}>
-              This will lock the current top 25 candidates into the official Winner records table. Once locked, rankings cannot be altered.
+              This will lock the selected {selectedIds.length} candidates into the official Winner records table. This action cannot be undone.
             </div>
 
             <Form method="post">
               <input type="hidden" name="campaignId" value={campaign.id} />
               <input type="hidden" name="actionType" value="finalize_winners" />
+              <input type="hidden" name="selectedIds" value={selectedIds.join(",")} />
 
               <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
-                <button type="button" style={{ background: "#000", color: "#fff", padding: "10px 20px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }} onClick={() => setShowConfirmModal(false)}>
-                  Cancel
-                </button>
-                <button type="submit"  disabled={isSubmitting} style={{ background: "#000", color: "#fff", padding: "10px 20px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }}>
-                  {isSubmitting ? "Finalizing..." : "Yes, Finalize Winners"}
-                </button>
+                <button type="button" style={{ background: "#f4f6f8", color: "#202223", padding: "10px 20px", borderRadius: "6px", border: "1px solid #c9cccf", cursor: "pointer", fontWeight: 600 }} onClick={() => setShowConfirmModal(false)}>Cancel</button>
+                <button type="submit" disabled={isSubmitting} style={{ background: "#008060", color: "#fff", padding: "10px 20px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }}>{isSubmitting ? "Finalizing..." : "Yes, Finalize Winners"}</button>
               </div>
             </Form>
           </div>
@@ -417,6 +267,4 @@ export function ErrorBoundary() {
 
 export const headers: HeadersFunction = (headersArgs) => {
   return boundary.headers(headersArgs);
-};
-
-
+}

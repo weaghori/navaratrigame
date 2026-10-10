@@ -23,6 +23,7 @@ import { FinalSubmissionActivity, type FinalConfig } from "../components/activit
 import { SpecialActivity } from "../components/activities/SpecialActivities";
 import { LeaderboardSection } from "../components/LeaderboardSection";
 import lockImage from "../styles/lock.webp";
+import brandLogo from "../styles/logo.webp";
 // Temporarily disabled; uncomment these imports and the render block below to restore the side videos.
 // import dancerVideoV1 from "../styles/v1.gif";
 // import dancerVideoV2 from "../styles/v2.gif";
@@ -42,8 +43,6 @@ import { limitRequestBody } from "../utils/request-body-limit.server";
 import type { WheelDiscountAdminClient } from "../services/reward.server";
 import { getLoginUrl, getLogoutUrl } from "../config/urls";
 import { WinnerPopupModal } from "../components/WinnerPopupModal";
-import { NotificationModal } from "../components/NotificationModal";
-import logoUrl from "../styles/logo.webp";
 
 type LevelWithChallengeCopy = {
   levelNumber: number;
@@ -555,7 +554,6 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
           rank: winnerRecord.rank,
           rewardAssigned: winnerRecord.rewardAssigned,
           prizeValue: "₹1,500–₹2,000",
-          rewardCode: reward?.discountCode || null,
           createdAt: winnerRecord.createdAt.toISOString(),
         }
       : null,
@@ -687,26 +685,6 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
 
     // Text answers use FormData too (the page submits multipart). Save them
     // into the moderation queue; points are awarded only after admin approval.
-    if (actionType === "update_display_name") {
-      const displayName = String(formData.get("displayName") || "").trim();
-      if (!displayName || displayName.length < 2 || displayName.length > 30) {
-        return { success: false, error: "Display name must be between 2 and 30 characters.", outcome: "display_name_error" };
-      }
-      
-      const progress = await prisma.customerProgress.findUnique({
-        where: { campaignId_shopifyCustomerId: { campaignId: campaign.id, shopifyCustomerId: customerId } }
-      });
-      if (!progress) {
-        return { success: false, error: "Participant record not found.", outcome: "display_name_error" };
-      }
-      
-      await prisma.customerProgress.update({
-        where: { id: progress.id },
-        data: { displayName }
-      });
-      return { success: true, outcome: "display_name_updated", message: "Display name updated successfully." };
-    }
-
     if (actionType === "text" || activityType === "text_submission") {
       if (!levelId) return { success: false, error: "Missing submission parameters." };
       try {
@@ -796,6 +774,23 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
 
     if (!customerId) {
       return { success: false, error: "Please log in with your store account to submit challenges." };
+    }
+
+    if (actionType === "set_display_name") {
+      const displayName = String(formData.get("displayName") || "").trim();
+      if (!displayName || displayName.length < 3) {
+        return { success: false, error: "Display name must be at least 3 characters." };
+      }
+      try {
+        await getOrCreateCustomerProgress({
+          campaignId: campaign.id,
+          shopifyCustomerId: customerId,
+          displayName,
+        });
+        return { success: true, outcome: "display_name_set" as const, message: "Display name saved successfully!" };
+      } catch (err: unknown) {
+        return { success: false, error: "Could not save display name." };
+      }
     }
 
     if (actionType === "prepare_spin") {
@@ -1024,6 +1019,10 @@ export default function CustomerCampaignPage() {
   const [leaderboard, setLeaderboard] = useState(initialData.leaderboard);
   const [transactions, setTransactions] = useState(initialData.transactions);
   const [isLive, setIsLive] = useState(true);
+  
+  const [showDisplayNameModal, setShowDisplayNameModal] = useState(false);
+  const [displayNameInput, setDisplayNameInput] = useState(initialData.progress.displayName || "");
+  const [isDisplayNameSubmitting, setIsDisplayNameSubmitting] = useState(false);
   const liveSyncSequence = useRef(0);
 
   // Server-synchronized time for countdowns
@@ -1037,14 +1036,6 @@ export default function CustomerCampaignPage() {
   }, []);
 
   const [activeLevelModal, setActiveLevelModal] = useState<(typeof levels)[0] | null>(null);
-  const [showNameModal, setShowNameModal] = useState(false);
-  
-  useEffect(() => {
-    if (isAuthenticated && initialData.progress && !initialData.progress.displayName && !showNameModal) {
-      setShowNameModal(true);
-    }
-  }, [isAuthenticated, initialData.progress]);
-
   const [submissionFeedback, setSubmissionFeedback] = useState<{
     outcome: "points_awarded" | "pending_review" | "feedback_submitted";
     pointsAwarded?: number;
@@ -1117,9 +1108,6 @@ export default function CustomerCampaignPage() {
   }, [fetchLiveUpdates, isAuthenticated]);
 
   useEffect(() => {
-    if (actionData?.outcome === "display_name_updated") {
-      setShowNameModal(false);
-    }
     if (actionData?.outcome === "quiz_partial") {
       setProgress((current) => ({
         ...current,
@@ -1590,6 +1578,30 @@ export default function CustomerCampaignPage() {
     });
   };
 
+  const handleSetDisplayName = useCallback((e: React.FormEvent) => {
+    e.preventDefault();
+    if (!customerId || !displayNameInput.trim() || displayNameInput.length < 3) return;
+    setIsDisplayNameSubmitting(true);
+    const form = new FormData();
+    form.append("actionType", "set_display_name");
+    form.append("customerId", customerId);
+    form.append("displayName", displayNameInput.trim());
+    addCustomerBridge(form);
+    
+    fetcher.submit(form, { method: "POST" });
+  }, [customerId, displayNameInput, fetcher]);
+
+  useEffect(() => {
+    if (fetcher.state === "idle" && fetcher.data) {
+      const fd = fetcher.data as any;
+      if (fd.outcome === "display_name_set" && isDisplayNameSubmitting) {
+        setIsDisplayNameSubmitting(false);
+        setShowDisplayNameModal(false);
+        // Let the loader reload take care of updating the display name
+      }
+    }
+  }, [fetcher.state, fetcher.data, isDisplayNameSubmitting]);
+
   const handleSpecialActivity = useCallback((activityType: string, values: Record<string, string> = {}) => {
     if (!activeLevelModal || !customerId) return;
     const form = new FormData();
@@ -1754,21 +1766,31 @@ export default function CustomerCampaignPage() {
               <span>{isLive ? "Live" : "Reconnecting"}</span>
             </div>
 
-            <div className="user-greeting-pill" style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "10px" }}>
-              <img src={logoUrl} alt="Aghori Store" style={{ height: "36px", width: "auto", borderRadius: "50%", boxShadow: "0 2px 8px rgba(0,0,0,0.3)" }} />
+            <div className="user-greeting-pill" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <img src={brandLogo} alt="Brand Logo" style={{ height: "32px", objectFit: "contain" }} />
               <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "2px" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                  <span style={{ fontWeight: 800 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                  <span>
                     {isAuthenticated
-                      ? `Welcome, ${progress?.displayName || initialData.progress?.displayName || "Player"}`
+                      ? `Welcome, ${initialData.progress.displayName || "Player"}`
                       : "Welcome, Festive Guest"}
                   </span>
                   {isAuthenticated && (
-                    <button type="button" onClick={() => setShowNameModal(true)} style={{ background: "none", border: "none", color: "#fbbf24", cursor: "pointer", fontSize: "12px", textDecoration: "underline", padding: 0 }}>
-                      ✏️ Edit Name
+                    <button 
+                      onClick={() => setShowDisplayNameModal(true)} 
+                      style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.7)', cursor: 'pointer', fontSize: '12px', padding: 0 }}
+                      title="Edit Display Name"
+                      aria-label="Edit Display Name"
+                    >
+                      ✎
                     </button>
                   )}
                 </div>
+                {isAuthenticated && initialData.customerIdentifier && (
+                  <span style={{ fontSize: "10px", color: "rgba(255, 255, 255, 0.7)", fontWeight: "normal", letterSpacing: "0.5px" }}>
+                    {initialData.customerIdentifier}
+                  </span>
+                )}
               </div>
             </div>
 
@@ -1890,7 +1912,7 @@ export default function CustomerCampaignPage() {
                 <div className="hud-reward-copy">
                   <div className="hud-stat-label">Reward</div>
                   <div className="hud-stat-val" style={{ color: "#fbbf24", fontSize: "14px" }}>
-                    {reward?.discountCode ? <><span className="hud-reward-code-label">Code: </span>{reward.discountCode}</> : "Exclusive Rewards"}
+                    {reward?.discountCode ? <><span className="hud-reward-code-label">Code: </span>{reward.discountCode}</> : "₹1,500–₹2,000 Gift"}
                   </div>
                 </div>
                 {reward?.discountCode && <button
@@ -1915,61 +1937,89 @@ export default function CustomerCampaignPage() {
           </div>
         </div>
 
-        {/* ================= 10 CHALLENGE MAP SECTION ================= */}
-        {/* Responsive 5 + 4 Card Grid */}
-        <div className="challenge-grid-5plus4">
-          <div className="challenge-row-1">
-            {row1Levels.map((lvl) => renderGameCard(lvl))}
-          </div>
-          <div className="challenge-row-2">
-            {row2Levels.map((lvl) => renderGameCard(lvl))}
-          </div>
-        </div>
-        {finalLevel && (
-          <div className="final-level-feature" style={{ 
-            marginTop: "48px", 
-            padding: "40px", 
-            borderRadius: "24px", 
-            background: "linear-gradient(135deg, #4c1d95, #1e1b4b)", 
-            border: "2px solid #fbbf24", 
-            boxShadow: "0 10px 40px rgba(0,0,0,0.6)", 
-            textAlign: "center", 
-            position: "relative", 
-            overflow: "hidden" 
+        {/* ================= 10 CHALLENGE MAP SECTION or WINNER ANNOUNCEMENT ================= */}
+        {initialData.winnerDetails ? (
+          <div style={{
+            background: "linear-gradient(135deg, #1e3a8a, #0f172a)",
+            border: "2px solid #fbbf24",
+            borderRadius: "24px",
+            padding: "48px 32px",
+            textAlign: "center",
+            boxShadow: "0 20px 60px rgba(0,0,0,0.5), 0 0 40px rgba(251,191,36,0.2)",
+            margin: "32px 0",
+            position: "relative",
+            overflow: "hidden"
           }}>
-            <div style={{ position: "absolute", top: "-20%", left: "-20%", width: "140%", height: "140%", background: "radial-gradient(circle, rgba(251,191,36,0.15) 0%, transparent 60%)", pointerEvents: "none" }} />
-            <LotusOrnament />
-            <h2 style={{ fontSize: "32px", color: "#fbbf24", margin: "16px 0 8px", textTransform: "uppercase", letterSpacing: "3px", fontWeight: 900, fontFamily: "var(--font-serif)" }}>
-              The Grand Finale
-            </h2>
-            <div style={{ display: "inline-block", background: "rgba(255,255,255,0.1)", padding: "4px 12px", borderRadius: "20px", marginBottom: "16px", color: "#fef08a", fontSize: "12px", fontWeight: 700, letterSpacing: "1px" }}>
-              DAY 10 EXCLUSIVE
+            <div style={{ position: "absolute", top: -20, left: -20, opacity: 0.1, transform: "scale(2)" }}>
+              <LotusOrnament />
             </div>
-            <p style={{ color: "#e2e8f0", fontSize: "16px", maxWidth: "500px", margin: "0 auto 24px auto", lineHeight: 1.6 }}>
-              {finalLevel.description || "Complete the final challenge and provide your feedback to claim your exclusive festive rewards!"}
+            <div style={{ position: "absolute", bottom: -20, right: -20, opacity: 0.1, transform: "scale(2) rotate(180deg)" }}>
+              <LotusOrnament />
+            </div>
+            
+            <div style={{ fontSize: "64px", marginBottom: "16px", textShadow: "0 0 20px rgba(251,191,36,0.5)" }} aria-hidden="true">🎉🏆🎉</div>
+            <h2 style={{
+              fontSize: "36px",
+              fontWeight: 900,
+              fontFamily: "var(--font-serif)",
+              color: "#fef08a",
+              marginBottom: "16px",
+              letterSpacing: "1px"
+            }}>
+              Congratulations! You are a Navratri Champion!
+            </h2>
+            <p style={{
+              fontSize: "18px",
+              color: "#e2e8f0",
+              lineHeight: 1.6,
+              maxWidth: "600px",
+              margin: "0 auto 32px auto"
+            }}>
+              Your devotion, skill, and consistency throughout the Navratri challenges have earned you a top spot on the leaderboard.
             </p>
-            <button 
-              type="button" 
-              onClick={() => setActiveLevelModal(finalLevel)}
-              style={{
-                padding: "16px 40px",
-                borderRadius: "30px",
-                background: "linear-gradient(to right, #fbbf24, #d97706)",
-                color: "#451a03",
-                fontSize: "18px",
-                fontWeight: 900,
-                border: "none",
-                cursor: "pointer",
-                boxShadow: "0 4px 15px rgba(217, 119, 6, 0.4)",
-                textTransform: "uppercase",
-                letterSpacing: "1px",
-                position: "relative",
-                zIndex: 10
-              }}
-            >
-              {finalLevel.state === "LOCKED" ? "🔒 Locked" : finalLevel.state === "COMPLETED" ? "✅ Completed" : "Unlock Level 10"}
-            </button>
+            
+            <div style={{
+              background: "rgba(255,255,255,0.05)",
+              border: "1px dashed rgba(251,191,36,0.4)",
+              borderRadius: "16px",
+              padding: "24px",
+              display: "inline-flex",
+              flexDirection: "column",
+              gap: "8px",
+              minWidth: "280px"
+            }}>
+              <div style={{ fontSize: "14px", color: "#94a3b8", textTransform: "uppercase", letterSpacing: "1px" }}>Your Final Rank</div>
+              <div style={{ fontSize: "48px", fontWeight: 900, color: "#fbbf24" }}>#{initialData.winnerDetails.rank}</div>
+              {initialData.winnerDetails.prizeValue > 0 && (
+                <>
+                  <div style={{ height: "1px", background: "rgba(255,255,255,0.1)", margin: "8px 0" }}></div>
+                  <div style={{ fontSize: "14px", color: "#94a3b8", textTransform: "uppercase", letterSpacing: "1px" }}>Prize Awarded</div>
+                  <div style={{ fontSize: "24px", fontWeight: 700, color: "#34d399" }}>₹{initialData.winnerDetails.prizeValue}</div>
+                </>
+              )}
+            </div>
+            
+            <p style={{
+              fontSize: "14px",
+              color: "#94a3b8",
+              marginTop: "32px"
+            }}>
+              Our team will contact you shortly with details on how to claim your exclusive rewards. Thank you for participating in Navratri 2026!
+            </p>
           </div>
+        ) : (
+          <>
+            {/* Responsive 5 + 4 Card Grid */}
+            <div className="challenge-grid-5plus4">
+              <div className="challenge-row-1">
+                {row1Levels.map((lvl) => renderGameCard(lvl))}
+              </div>
+              <div className="challenge-row-2">
+                {row2Levels.map((lvl) => renderGameCard(lvl))}
+              </div>
+            </div>
+            {finalLevel && <div className="final-level-feature">{renderGameCard(finalLevel)}</div>}
+          </>
         )}
         {/* Footer Flourish */}
         <div className="nav-footer-flourish">
@@ -2235,96 +2285,175 @@ export default function CustomerCampaignPage() {
         document.body,
       )}
 
-      <NotificationModal
-        isOpen={!!submissionFeedback}
-        onClose={() => setSubmissionFeedback(null)}
-        type={submissionFeedback?.outcome === "pending_review" ? "info" : "success"}
-        title={
-          submissionFeedback?.prizeLabel || submissionFeedback?.discountPercent
-            ? "You got this offer!"
-            : submissionFeedback?.outcome === "feedback_submitted"
-            ? "Feedback saved"
-            : submissionFeedback?.outcome === "points_awarded"
-            ? "Points earned!"
-            : "Submission received"
-        }
-        highlightText={
-          submissionFeedback?.outcome === "points_awarded"
-            ? `+${submissionFeedback?.quizPointsTotal ?? submissionFeedback?.pointsAwarded ?? 0} points`
-            : undefined
-        }
-        message={
-          submissionFeedback?.outcome === "points_awarded" ? (
-            <>
-              <p style={{ margin: "0 0 12px" }}>
-                {submissionFeedback.offerMessage ||
-                  submissionFeedback.message ||
-                  (submissionFeedback.prizeLabel
-                    ? `Congratulations! You won ${submissionFeedback.prizeLabel}.`
-                    : "Your challenge is complete!")}
-              </p>
-              {submissionFeedback.discountCode && (
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16, margin: "0 0 8px" }}>
-                  <div style={{ width: "100%", padding: "16px", border: "2px dashed #cbd5e1", borderRadius: 16, background: "#f8fafc" }}>
-                    <div style={{ color: "#475569", fontSize: 13, fontWeight: 800, textTransform: "uppercase", marginBottom: 8, letterSpacing: 1 }}>
-                      Your {submissionFeedback.discountPercent}% OFF Code
-                    </div>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12 }}>
-                      <code id="reward-code" style={{ color: "#1e293b", fontSize: 28, fontWeight: 900, letterSpacing: 2 }}>{submissionFeedback.discountCode}</code>
-                      <button type="button" aria-label="Copy code" onClick={() => navigator.clipboard.writeText(submissionFeedback.discountCode || "")} style={{ background: "#e2e8f0", border: "none", color: "#334155", width: 36, height: 36, borderRadius: "50%", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                      </button>
-                    </div>
-                  </div>
-                  <a href={submissionFeedback.useNowUrl || "https://aghoristore.com"} target="_top" rel="noreferrer" style={{ width: "100%", display: "block", padding: "14px 20px", borderRadius: 12, background: "linear-gradient(to right, #fbbf24, #d97706)", color: "#451a03", fontSize: 16, fontWeight: 900, textDecoration: "none" }}>Shop now — apply my code</a>
-                </div>
-              )}
-            </>
-          ) : (
-            <>
-              <p style={{ margin: "0 0 12px" }}>{submissionFeedback?.message}</p>
-              <p style={{ fontSize: "14px" }}>
-                {submissionFeedback?.outcome === "feedback_submitted"
-                  ? "No points are awarded for Level 10 feedback."
-                  : "Points will be added if your entry is approved."}
-              </p>
-            </>
-          )
-        }
-        actionText={submissionFeedback?.outcome === "points_awarded" ? "Got it — level complete" : "Continue"}
-      />
-
-      <NotificationModal
-        isOpen={showNameModal}
-        onClose={() => setShowNameModal(false)}
-        type="info"
-        title="Set Your Display Name"
-        hideActionButton={true}
-        message={
-          <Form method="post" style={{ display: "flex", flexDirection: "column", gap: "16px", textAlign: "left", marginTop: "8px" }}>
-            <input type="hidden" name="actionType" value="update_display_name" />
-            <label style={{ fontSize: "15px", fontWeight: 600, color: "#334155" }}>
-              How should we call you on the leaderboard?
-            </label>
-            <input 
-              type="text" 
-              name="displayName" 
-              defaultValue={progress?.displayName || initialData.progress?.displayName || ""} 
-              placeholder="e.g. Navratri King" 
-              required 
-              minLength={2} 
-              maxLength={30}
-              style={{ padding: "14px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "16px", outline: "none", color: "#000" }} 
-            />
-            {actionData?.error && actionData?.outcome === "display_name_error" && (
-              <div style={{ color: "#dc2626", fontSize: "13px", fontWeight: 600 }}>{actionData.error}</div>
-            )}
-            <button type="submit" style={{ padding: "14px", borderRadius: "8px", background: "#1e293b", color: "#fff", fontWeight: 700, border: "none", cursor: "pointer", fontSize: "16px", boxShadow: "0 4px 6px rgba(0,0,0,0.1)" }}>
-              Save Name
+      {submissionFeedback && (
+        <div className="festive-modal-overlay" role="presentation" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <section
+            className={`festive-modal-card festive-modal-card--${submissionFeedback.outcome}`}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="submission-feedback-title"
+            style={{ 
+              textAlign: "center", 
+              maxWidth: "440px", 
+              background: "radial-gradient(circle at 50% 0%, #1e1b4b 0%, #020617 80%)",
+              border: "1px solid rgba(251, 191, 36, 0.4)",
+              boxShadow: "0 20px 60px -10px rgba(0, 0, 0, 0.8), 0 0 30px rgba(251, 191, 36, 0.15)",
+              borderRadius: "24px",
+              padding: "32px 24px"
+            }}
+          >
+            <button
+              type="button"
+              className="festive-modal-close-btn"
+              onClick={() => setSubmissionFeedback(null)}
+              title="Close"
+              aria-label="Close submission confirmation"
+              style={{ position: 'absolute', top: 16, right: 16, background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', width: 32, height: 32, color: '#fff', cursor: 'pointer' }}
+            >
+              ✕
             </button>
-          </Form>
-        }
-      />
+            <div style={{ fontSize: "52px", margin: "0 0 16px" }} aria-hidden="true">
+              {submissionFeedback.outcome === "pending_review" ? "⏳" : "🎉"}
+            </div>
+            <h2
+              id="submission-feedback-title"
+              style={{ margin: "0 0 8px", color: "#fef08a", fontSize: "28px", fontWeight: 900, fontFamily: "var(--font-serif)" }}
+            >
+              {submissionFeedback.prizeLabel || submissionFeedback.discountPercent ? "You got this offer!" : submissionFeedback.outcome === "feedback_submitted" ? "Feedback saved" : submissionFeedback.outcome === "points_awarded" ? "Points earned!" : "Submission received"}
+            </h2>
+            {submissionFeedback.outcome === "points_awarded" ? (
+              <>
+                <p style={{ color: "#e2e8f0", fontSize: "15px", margin: "0 0 12px" }}>
+                  {submissionFeedback.offerMessage || submissionFeedback.message || (submissionFeedback.prizeLabel ? `Congratulations! You won ${submissionFeedback.prizeLabel}.` : "Your challenge is complete!")}
+                </p>
+                <div style={{ color: "#fbbf24", fontSize: "40px", fontWeight: 900, marginBottom: "20px", textShadow: "0 2px 10px rgba(251, 191, 36, 0.3)" }}>
+                  +{submissionFeedback.quizPointsTotal ?? submissionFeedback.pointsAwarded ?? 0} points
+                </div>
+                {submissionFeedback.discountCode ? (
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16, margin: "0 0 8px" }}>
+                    <div style={{ width: "100%", padding: "16px", border: "2px dashed rgba(251, 191, 36, 0.5)", borderRadius: 16, background: "rgba(251, 191, 36, 0.05)", position: "relative" }}>
+                      <div style={{ color: "#fbbf24", fontSize: 13, fontWeight: 800, textTransform: "uppercase", marginBottom: 8, letterSpacing: 1 }}>
+                        Your {submissionFeedback.discountPercent}% OFF Code
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12 }}>
+                        <code id="reward-code" style={{ color: "#ffffff", fontSize: 28, fontWeight: 900, letterSpacing: 2 }}>{submissionFeedback.discountCode}</code>
+                        <button type="button" aria-label="Copy code" onClick={() => navigator.clipboard.writeText(submissionFeedback.discountCode || "")} style={{ background: "rgba(255,255,255,0.1)", border: "none", color: "#fff", width: 36, height: 36, borderRadius: "50%", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                          <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                        </button>
+                      </div>
+                    </div>
+                    <a href={submissionFeedback.useNowUrl || "https://aghoristore.com"} target="_top" rel="noreferrer" style={{ width: "100%", display: "block", padding: "14px 20px", borderRadius: 12, background: "linear-gradient(to right, #fbbf24, #d97706)", color: "#451a03", fontSize: 16, fontWeight: 900, textDecoration: "none", boxShadow: "0 4px 12px rgba(217, 119, 6, 0.3)" }}>Shop now — apply my code</a>
+                  </div>
+                ) : <p style={{ color: "#94a3b8", fontSize: "14px", margin: "0 0 24px" }}>Your points have been added to your score.</p>}
+              </>
+            ) : (
+              <>
+                <p style={{ color: "#e2e8f0", fontSize: "16px", lineHeight: 1.6, margin: "0 0 12px" }}>
+                  {submissionFeedback.message}
+                </p>
+                <p style={{ color: "#94a3b8", fontSize: "14px", lineHeight: 1.6, margin: "0 0 24px" }}>
+                  {submissionFeedback.outcome === "feedback_submitted" ? "No points are awarded for Level 10 feedback." : "Points will be added if your entry is approved."}
+                </p>
+              </>
+            )}
+            <button
+              type="button"
+              onClick={() => setSubmissionFeedback(null)}
+              style={{
+                width: "100%",
+                padding: "14px 20px",
+                borderRadius: "12px",
+                border: "1px solid rgba(255,255,255,0.2)",
+                background: "rgba(255,255,255,0.05)",
+                color: "#e2e8f0",
+                fontSize: 15,
+                fontWeight: 700,
+                cursor: "pointer",
+                transition: "background 0.2s"
+              }}
+            >
+              {submissionFeedback.outcome === "points_awarded" ? "Got it — level complete" : "Continue"}
+            </button>
+          </section>
+        </div>
+      )}
+
+      {/* Display Name Edit Modal */}
+      {showDisplayNameModal && (
+        <div className="festive-modal-overlay" role="presentation" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
+          <section
+            className="festive-modal-card"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="display-name-title"
+            style={{ 
+              textAlign: "center", 
+              maxWidth: "400px", 
+              width: "100%",
+              background: "radial-gradient(circle at 50% 0%, #1e1b4b 0%, #020617 80%)",
+              border: "1px solid rgba(251, 191, 36, 0.4)",
+              boxShadow: "0 20px 60px -10px rgba(0, 0, 0, 0.8), 0 0 30px rgba(251, 191, 36, 0.15)",
+              borderRadius: "24px",
+              padding: "32px 24px"
+            }}
+          >
+            <button
+              type="button"
+              className="festive-modal-close-btn"
+              onClick={() => setShowDisplayNameModal(false)}
+              title="Close"
+              aria-label="Close"
+              style={{ position: 'absolute', top: 16, right: 16, background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', width: 32, height: 32, color: '#fff', cursor: 'pointer' }}
+            >
+              ✕
+            </button>
+            <h2 id="display-name-title" style={{ margin: "0 0 16px", color: "#fef08a", fontSize: "24px", fontWeight: 900, fontFamily: "var(--font-serif)" }}>
+              Choose Display Name
+            </h2>
+            <p style={{ color: "#cbd5e1", fontSize: "14px", marginBottom: "24px" }}>
+              This name will be shown on the public leaderboard. It helps keep your identity private.
+            </p>
+            <form onSubmit={handleSetDisplayName} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              <input
+                type="text"
+                name="displayName"
+                value={displayNameInput}
+                onChange={(e) => setDisplayNameInput(e.target.value)}
+                placeholder="E.g., FestiveStar99"
+                minLength={3}
+                maxLength={30}
+                required
+                style={{
+                  width: "100%",
+                  padding: "12px 16px",
+                  borderRadius: "12px",
+                  border: "1px solid rgba(251, 191, 36, 0.4)",
+                  background: "rgba(255,255,255,0.05)",
+                  color: "#fff",
+                  fontSize: "16px",
+                  outline: "none"
+                }}
+              />
+              <button
+                type="submit"
+                disabled={isDisplayNameSubmitting || displayNameInput.trim().length < 3}
+                style={{
+                  padding: "14px",
+                  borderRadius: "12px",
+                  background: displayNameInput.trim().length >= 3 ? "linear-gradient(135deg, #d97706, #b45309)" : "rgba(255,255,255,0.1)",
+                  color: displayNameInput.trim().length >= 3 ? "#fff" : "rgba(255,255,255,0.4)",
+                  border: "none",
+                  fontWeight: 700,
+                  cursor: displayNameInput.trim().length >= 3 ? "pointer" : "not-allowed",
+                  transition: "all 0.2s"
+                }}
+              >
+                {isDisplayNameSubmitting ? "Saving..." : "Save Name"}
+              </button>
+            </form>
+          </section>
+        </div>
+      )}
 
       {/* Winner Popup Modal */}
       <WinnerPopupModal
@@ -2332,7 +2461,6 @@ export default function CustomerCampaignPage() {
         onClose={handleCloseWinnerPopup}
         rank={initialData.winnerDetails?.rank}
         prizeValue={initialData.winnerDetails?.prizeValue}
-        rewardCode={initialData.winnerDetails?.rewardCode || undefined}
       />
     </div>
     </AppProxyProvider>

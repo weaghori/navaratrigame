@@ -207,8 +207,8 @@ export function SpecialActivity({
     const maxAttempts = Number(config.maxAttempts) || 30;
     const lost = !gameComplete && (secondsLeft <= 0 || attempts >= maxAttempts);
     return (
-      <div className="memory-game" style={{ padding: 16, textAlign: "center", background: "#ffffff", borderRadius: "12px", boxShadow: "0 4px 12px rgba(0,0,0,0.05)", color: "#1e293b" }}>
-        <p className="memory-game-status" style={{ fontWeight: 600, color: "#475569", marginBottom: "16px" }}>Find every matching pair · {secondsLeft}s · {attempts}/{maxAttempts} attempts</p>
+      <div className="memory-game" style={{ padding: 12, textAlign: "center", background: "#ffffff", borderRadius: "12px", border: "1px solid #e2e8f0" }}>
+        <p className="memory-game-status" style={{ color: "#1e293b", fontWeight: 600 }}>Find every matching pair · {secondsLeft}s · {attempts}/{maxAttempts} attempts</p>
         <div className="memory-game-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(48px, 1fr))", gap: 12, maxWidth: 420, margin: "0 auto 18px" }}>
           {cards.map((face, index) => {
             const revealed = open.includes(index) || matched.includes(index);
@@ -228,10 +228,14 @@ export function SpecialActivity({
                 }}
               >
                 <div className="memory-card-inner">
-                  <div className="memory-card-hidden" style={{ padding: 0, backgroundImage: cardImage ? `url("${cardImage}")` : "linear-gradient(135deg, #ea580c, #7c2d12)", backgroundPosition: "center", backgroundSize: "cover", borderRadius: "12px", border: "2px solid rgba(0,0,0,0.05)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 4px rgba(0,0,0,0.1)" }}>
-                    {!cardImage && <span style={{ fontSize: "24px", opacity: 0.8 }}>🪔</span>}
+                  <div className="memory-card-hidden" style={{ padding: 0, background: "#ffffff", borderRadius: "12px", border: "2px solid rgba(0,0,0,0.1)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 6px rgba(0,0,0,0.1)", overflow: "hidden" }}>
+                    {cardImage ? (
+                      <img src={cardImage} alt="Card back" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    ) : (
+                      <span style={{ fontSize: "24px", opacity: 0.8 }}>🪔</span>
+                    )}
                   </div>
-                  <div className="memory-card-revealed" style={imageFace ? { padding: 0, backgroundImage: `url("${face}")`, backgroundSize: "cover", backgroundPosition: "center", borderRadius: "12px", border: "none" } : { background: "#f8fafc", borderRadius: "12px", border: "2px solid #e2e8f0" }}>
+                  <div className="memory-card-revealed" style={imageFace ? { padding: 0, backgroundImage: `url(${face})`, backgroundSize: "cover", backgroundPosition: "center", borderRadius: "12px", border: "none" } : { background: "#ffffff", color: "#1e293b", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "18px", fontWeight: "bold" }}>
                     {!imageFace && face}
                   </div>
                 </div>

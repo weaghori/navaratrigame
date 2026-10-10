@@ -59,7 +59,7 @@ export async function getOrCreateCustomerProgress({
   });
   if (existing) {
     const cleanDisplayName = displayName?.trim().slice(0, 120);
-    if (cleanDisplayName && existing.displayName !== cleanDisplayName) {
+    if (cleanDisplayName && !existing.displayName) {
       return prisma.customerProgress.update({
         where: { id: existing.id },
         data: { displayName: cleanDisplayName },

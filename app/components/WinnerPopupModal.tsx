@@ -7,10 +7,9 @@ export interface WinnerPopupModalProps {
   onClose: () => void;
   rank?: number | null;
   prizeValue?: string;
-  rewardCode?: string;
 }
 
-export function WinnerPopupModal({ isOpen, onClose, rank, prizeValue = "₹1,500–₹2,000", rewardCode }: WinnerPopupModalProps) {
+export function WinnerPopupModal({ isOpen, onClose, rank, prizeValue = "₹1,500–₹2,000" }: WinnerPopupModalProps) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -50,12 +49,6 @@ export function WinnerPopupModal({ isOpen, onClose, rank, prizeValue = "₹1,500
             <div className="prize-value-text">
               You have won a special gift worth <strong>{prizeValue}</strong>.
             </div>
-            {rewardCode && (
-              <div style={{ marginTop: "12px", background: "rgba(255,255,255,0.2)", padding: "12px", borderRadius: "8px", border: "1px dashed rgba(251, 191, 36, 0.5)", textAlign: "center" }}>
-                <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "4px" }}>Your Exclusive Code</div>
-                <code style={{ fontSize: "20px", fontWeight: 900, color: "#fbbf24", letterSpacing: "2px" }}>{rewardCode}</code>
-              </div>
-            )}
           </div>
         </div>
 
@@ -63,7 +56,7 @@ export function WinnerPopupModal({ isOpen, onClose, rank, prizeValue = "₹1,500
         <p className="winner-modal-description">
           Thank you for participating in <strong>Aghori Store Navratri 2026</strong>.
           <br />
-          {rewardCode ? "Use your code at checkout to claim your reward!" : "Our team will contact you shortly with the prize details."}
+          Our team will contact you shortly with the prize details.
         </p>
 
         {/* Action Button */}

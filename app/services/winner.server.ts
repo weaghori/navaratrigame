@@ -253,96 +253,104 @@ export async function getWinnersList(campaignId: string) {
   });
 }
 
-export async function pickRandomWinners({ campaignId, count, adminUser }: { campaignId: string, count: number, adminUser?: string }) {
+export async function getEligibleCandidates(campaignId: string) {
+  const campaign = await prisma.campaign.findUnique({ where: { id: campaignId } });
+  const maxPoints = campaign?.maxPoints || 1000;
+  
+  const eligible = await prisma.customerProgress.findMany({
+    where: {
+      campaignId,
+      OR: [
+        { totalPoints: { gte: maxPoints } },
+        { eligibleAt: { not: null } }
+      ],
+      winner: null // Only pick people who are not already winners
+    },
+    orderBy: [
+      { totalPoints: "desc" },
+      { completedAt: "asc" }
+    ],
+    select: {
+      id: true,
+      shopifyCustomerId: true,
+      displayName: true,
+      totalPoints: true,
+      currentLevel: true,
+      eligibleAt: true,
+      completedAt: true
+    }
+  });
+
+  return eligible;
+}
+
+export async function finalizeSelectedWinners({
+  campaignId,
+  customerProgressIds,
+  adminUser
+}: {
+  campaignId: string;
+  customerProgressIds: string[];
+  adminUser?: string;
+}) {
   const result = await prisma.$transaction(async (tx) => {
-    const campaign = await tx.campaign.findUnique({ where: { id: campaignId } });
-    if (!campaign) throw new Error("Campaign not found.");
+    const existingWinnersCount = await tx.winner.count({ where: { campaignId } });
+    
+    let currentRank = existingWinnersCount + 1;
+    let finalizedCount = 0;
 
-    const existingWinners = await tx.winner.findMany({ where: { campaignId } });
-    const existingIds = existingWinners.map(w => w.customerProgressId);
-
-    const eligible = await tx.customerProgress.findMany({
-      where: {
-        campaignId,
-        id: { notIn: existingIds },
-        totalPoints: { gt: 0 }
-      }
-    });
-
-    if (eligible.length === 0) throw new Error("No eligible candidates found.");
-
-    // Shuffle and pick
-    const shuffled = eligible.sort(() => 0.5 - Math.random());
-    const picked = shuffled.slice(0, count);
-    const startRank = existingWinners.length + 1;
-
-    const createdWinners = [];
-    for (let i = 0; i < picked.length; i++) {
-      const participant = picked[i];
-      const rank = startRank + i;
+    for (const cpId of customerProgressIds) {
+      const participant = await tx.customerProgress.findUnique({ where: { id: cpId } });
+      if (!participant) continue;
       
-      const winner = await tx.winner.create({
+      const existingWinner = await tx.winner.findUnique({ where: { customerProgressId: cpId } });
+      if (existingWinner) continue; // Skip if already a winner
+
+      await tx.winner.create({
         data: {
           campaignId,
-          rank,
+          rank: currentRank,
           customerProgressId: participant.id,
           shopifyCustomerId: participant.shopifyCustomerId,
-          rewardAssigned: false,
+          rewardAssigned: false
         }
       });
-      await tx.customerProgress.update({ where: { id: participant.id }, data: { status: "winner" } });
-      createdWinners.push({ ...winner, customerId: participant.shopifyCustomerId });
+
+      await tx.customerProgress.update({
+        where: { id: participant.id },
+        data: { status: "winner" }
+      });
+
+      // Optionally send notification
+      await createNotification({
+        tx,
+        campaignId,
+        recipientType: "CUSTOMER",
+        recipientId: participant.shopifyCustomerId,
+        type: "WINNER",
+        title: "You are a Winner! <؉�",
+        message: "Congratulations! You have been selected as a winner in our Navratri Challenge.",
+        actionUrl: "/campaigns/" + (await tx.campaign.findUnique({where:{id:campaignId}}))?.slug
+      });
+
+      currentRank++;
+      finalizedCount++;
     }
-    return { success: true, count: createdWinners.length, winners: createdWinners, campaign };
-  });
 
-  // Notifications
-  for (const w of result.winners) {
-    await createNotification({
-      recipientType: "CUSTOMER", recipientId: w.customerId, campaignId, type: "WINNER",
-      title: `🏆 You are an Official Winner (Rank #${w.rank})!`,
-      message: `Congratulations! You were selected as a winner in the Navratri campaign!`,
-      actionUrl: `/campaigns/${result.campaign.slug}`, idempotencyKey: `winner_${w.id}`,
-    });
-  }
-  return result;
-}
-
-export async function addManualWinner({ campaignId, shopifyCustomerId, adminUser }: { campaignId: string, shopifyCustomerId: string, adminUser?: string }) {
-  const result = await prisma.$transaction(async (tx) => {
-    const campaign = await tx.campaign.findUnique({ where: { id: campaignId } });
-    if (!campaign) throw new Error("Campaign not found.");
-
-    let participant = await tx.customerProgress.findUnique({
-      where: { campaignId_shopifyCustomerId: { campaignId, shopifyCustomerId } }
-    });
-    if (!participant) {
-      participant = await tx.customerProgress.create({
-        data: { campaignId, shopifyCustomerId, totalPoints: 0, currentLevel: 1 }
+    if (finalizedCount > 0) {
+      await recordAuditEvent({
+        tx,
+        campaignId,
+        eventType: "WINNER_FINALIZED",
+        actorType: "ADMIN",
+        actorId: adminUser || "system",
+        metadata: { finalizedCount }
       });
     }
-
-    const existing = await tx.winner.findFirst({ where: { campaignId, customerProgressId: participant.id } });
-    if (existing) throw new Error("Customer is already a winner.");
-
-    const existingWinnersCount = await tx.winner.count({ where: { campaignId } });
-    const rank = existingWinnersCount + 1;
-
-    const winner = await tx.winner.create({
-      data: {
-        campaignId, rank, customerProgressId: participant.id, shopifyCustomerId, rewardAssigned: false
-      }
-    });
-    await tx.customerProgress.update({ where: { id: participant.id }, data: { status: "winner" } });
-
-    return { success: true, winner: { ...winner, customerId: shopifyCustomerId }, campaign };
+    
+    return { finalizedCount };
   });
 
-  await createNotification({
-    recipientType: "CUSTOMER", recipientId: result.winner.customerId, campaignId, type: "WINNER",
-    title: `🏆 You are an Official Winner (Rank #${result.winner.rank})!`,
-    message: `Congratulations! You were selected as a winner in the Navratri campaign!`,
-    actionUrl: `/campaigns/${result.campaign.slug}`, idempotencyKey: `winner_${result.winner.id}`,
-  });
   return result;
 }
+
