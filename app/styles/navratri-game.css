@@ -3432,3 +3432,6 @@ body {
 .festive-modal-card textarea::placeholder, .festive-modal-card input[type="text"]::placeholder {
   color: rgba(255, 255, 255, 0.7) !important;
 }
+
+/* Day 10 Override */
+.festive-modal-card--day-10 { --popup-image: none !important; background: radial-gradient(circle at top, #2e1065 0%, #020617 80%) !important; border: 2px solid #fbbf24 !important; box-shadow: 0 0 50px rgba(251, 191, 36, 0.4) !important; --popup-title: #fef08a; --popup-text: #fef08a; --popup-muted: #e2e8f0; --popup-panel-bg: rgba(255, 255, 255, 0.05); --popup-dropzone-bg: rgba(255, 255, 255, 0.05); --popup-button-bg: linear-gradient(110deg, #fbbf24, #d97706); --popup-button-text: #451a03; }

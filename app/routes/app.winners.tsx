@@ -5,7 +5,7 @@ import { useAppBridge } from "@shopify/app-bridge-react";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import { authenticate } from "../shopify.server";
 import { getActiveCampaign } from "../services/campaign.server";
-import { getTop25Calculated, finalizeTop25Winners } from "../services/winner.server";
+import { getTop25Calculated, finalizeTop25Winners, pickRandomWinners, addManualWinner } from "../services/winner.server";
 import prisma from "../db.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
@@ -88,6 +88,26 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     }
   }
 
+  if (actionType === "pick_random") {
+    try {
+      const result = await pickRandomWinners({ campaignId, count: 5, adminUser: session.shop });
+      return { success: true, message: `Successfully picked ${result.count} random winners.` };
+    } catch (err: unknown) {
+      return { success: false, error: err instanceof Error ? err.message : "Failed to pick random winners" };
+    }
+  }
+
+  if (actionType === "add_manual_winner") {
+    const shopifyCustomerId = String(formData.get("shopifyCustomerId") || "").trim();
+    if (!shopifyCustomerId) return { success: false, error: "Customer ID is required." };
+    try {
+      await addManualWinner({ campaignId, shopifyCustomerId, adminUser: session.shop });
+      return { success: true, message: `Successfully added ${shopifyCustomerId} as a winner.` };
+    } catch (err: unknown) {
+      return { success: false, error: err instanceof Error ? err.message : "Failed to add manual winner" };
+    }
+  }
+
   return { success: false, error: "Unknown action." };
 };
 
@@ -160,10 +180,31 @@ export default function WinnersPage() {
             </div>
           </div>
 
-          {!isFinalized && (
-            <button  style={{ background: "#000", color: "#fff", padding: "10px 20px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }} onClick={() => setShowConfirmModal(true)}>
-              🔒 Finalize Top 25 Winners
-            </button>
+          {!isFinalized ? (
+            <div style={{ display: "flex", gap: "10px" }}>
+              <button  style={{ background: "#000", color: "#fff", padding: "10px 20px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }} onClick={() => setShowConfirmModal(true)}>
+                🔒 Finalize Top 25
+              </button>
+            </div>
+          ) : (
+            <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+              <Form method="post" onSubmit={() => shopify.toast.show("Picking random winners...")}>
+                <input type="hidden" name="campaignId" value={campaign.id} />
+                <input type="hidden" name="actionType" value="pick_random" />
+                <button type="submit" disabled={isSubmitting} style={{ background: "#4f46e5", color: "#fff", padding: "10px 20px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }}>
+                  🎲 Pick 5 Random Winners
+                </button>
+              </Form>
+
+              <Form method="post" style={{ display: "flex", gap: "6px" }}>
+                <input type="hidden" name="campaignId" value={campaign.id} />
+                <input type="hidden" name="actionType" value="add_manual_winner" />
+                <input type="text" name="shopifyCustomerId" placeholder="gid://shopify/Customer/123" required style={{ padding: "8px 12px", borderRadius: "6px", border: "1px solid #d1d5db" }} />
+                <button type="submit" disabled={isSubmitting} style={{ background: "#059669", color: "#fff", padding: "10px 20px", borderRadius: "6px", border: "none", cursor: "pointer", fontWeight: 600 }}>
+                  + Add Manual Winner
+                </button>
+              </Form>
+            </div>
           )}
         </div>
       </div>

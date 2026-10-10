@@ -142,7 +142,7 @@ export function ExpandableParticipantRow({ p, campaign }: { p: Participant; camp
                               <div style={{ fontSize: "13px", color: "#475569", marginBottom: "4px" }}><strong>Total:</strong> ₹{order.totalPrice}</div>
                               <div style={{ fontSize: "13px", color: "#475569", marginBottom: "4px" }}><strong>Paid At:</strong> {new Date(order.paidAt).toLocaleString()}</div>
                               <div style={{ fontSize: "13px", color: "#475569", marginBottom: "4px" }}><strong>Points Awarded:</strong> {isQualifying ? "100 pts" : "0 pts"}</div>
-                              {!isQualifying && <div style={{ fontSize: "12px", color: "#dc2626", marginTop: "8px" }}>Reason: Needs verification, unpaid, or does not meet ₹299 threshold.</div>}
+                              {!isQualifying && <div style={{ fontSize: "12px", color: "#dc2626", marginTop: "8px" }}>Reason: Unpaid or does not meet ₹299 threshold.</div>}
                             </div>
                           );
                         })
