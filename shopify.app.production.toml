@@ -7,7 +7,7 @@ name = "navratri app"
 
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
-scopes = "read_products,write_products,read_orders,write_metaobjects,write_metaobject_definitions,write_discounts,read_discounts,write_price_rules,read_price_rules,write_app_proxy"
+scopes = "read_products,write_products,read_orders,write_metaobjects,write_metaobject_definitions,write_discounts,read_discounts,write_price_rules,read_price_rules,write_app_proxy,read_customers"
 
 [product.metafields.app.demo_info]
 type = "single_line_text_field"

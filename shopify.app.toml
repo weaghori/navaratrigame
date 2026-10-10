@@ -1,7 +1,7 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
 client_id = "d6df797638ae5c7f928c25df490169d3"
-application_url = "https://example.com"
+application_url = "https://navaratrigame.vercel.app"
 embedded = true
 name = "navratri app"
 
@@ -37,9 +37,9 @@ type = "multi_line_text_field"
 api_version = "2026-10"
 
 [webhooks.privacy_compliance]
-customer_deletion_url = "https://example.com/webhooks/customers/redact"
-customer_data_request_url = "https://example.com/webhooks/customers/data_request"
-shop_deletion_url = "https://example.com/webhooks/shop/redact"
+customer_deletion_url = "https://navaratrigame.vercel.app/webhooks/customers/redact"
+customer_data_request_url = "https://navaratrigame.vercel.app/webhooks/customers/data_request"
+shop_deletion_url = "https://navaratrigame.vercel.app/webhooks/shop/redact"
 
   [[webhooks.subscriptions]]
   uri = "/webhooks/app/uninstalled"
@@ -52,9 +52,10 @@ shop_deletion_url = "https://example.com/webhooks/shop/redact"
 
 [auth]
 redirect_urls = [
-  "https://example.com/api/auth",
-  "https://example.com/auth/callback",
-  "https://example.com/auth/shopify/callback"
+  "https://navaratrigame.vercel.app/api/auth",
+  "https://navaratrigame.vercel.app/auth/callback",
+  "https://navaratrigame.vercel.app/auth/shopify/callback"
+
 ]
 
 [app_proxy]
